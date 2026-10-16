@@ -1,0 +1,1 @@
+{"name": "Zsömle bolt", "short_name": "Zsömle bolt", "start_url": "./index.html", "display": "standalone", "background_color": "#f6f3ee", "theme_color": "#8a4b1e", "orientation": "landscape", "icons": [{"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}, {"src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png"}]}
