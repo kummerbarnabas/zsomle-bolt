@@ -173,7 +173,7 @@ function drawGrid(){
   const list=TERMEKEK.filter(t=>keres?t.nev.toLowerCase().includes(keres.toLowerCase()):t.kat===kat);
   $('#grid').innerHTML=list.map(t=>csempe(t,`addItem(${t.id})`,true)).join('');}
 // Csempe: felül a kép (a felhasználó készíti; addig helykitöltő), alatta a név és az ár.
-function csempe(t,onclick,arral){const kep=t.foto?`style="background:#fff url('foto/${t.foto}') center/contain no-repeat"`:'';
+function csempe(t,onclick,arral){const src=t.foto&&(/^https?:/.test(t.foto)?t.foto:'foto/'+t.foto);const kep=src?`style="background:#fff url('${src}') center/contain no-repeat"`:'';
   return `<button class="p" onclick="${onclick}"><span class="kep" ${kep}>${t.foto?'':(t.rovid||t.nev).slice(0,1)}</span>
    <span class="n">${t.rovid||t.nev}</span>${arral?`<span class="a">${ft(t.ar)}${t.egyseg==='kg'?'/kg':''}</span>`:''}</button>`;}
 function addItem(id){
