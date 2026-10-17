@@ -128,6 +128,7 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
+const VALTOZAT='23'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -135,13 +136,17 @@ const $=s=>document.querySelector(s);
 function alDlg(id){const t=TERMEKEK.find(x=>x.id===id);const m=document.createElement('div');m.className='modal';
   m.innerHTML=`<div class="aldlg"><b>${t.rovid||t.nev}</b><br><br><b>Allergének:</b> ${t.allergen}<br><br><span class="muted">Forrás: ${t.allergen_forras||''}</span></div>`;
   m.onclick=()=>m.remove();document.body.appendChild(m);}
+async function frissit(){toast('Frissítés…');try{await szinkron();}catch(e){}
+  try{const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.unregister();const ks=await caches.keys();for(const k of ks)await caches.delete(k);}catch(e){}
+  location.replace(location.pathname+'?v='+Date.now());}
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800);}
 
 // ---- belépés -------------------------------------------------------------------
 function loginView(){
   $('#app').innerHTML=`<div class="login"><h1>Zsömle — bolt</h1><div class="muted">Válaszd ki a neved</div>
   <div class="names">${DOLGOZOK.map((d,i)=>`<button onclick="pinDlg(${i})">${d.nev}</button>`).join('')}
-  <button onclick="pinDlg(-1)">Tulajdonos</button></div></div>`;}
+  <button onclick="pinDlg(-1)">Tulajdonos</button></div>
+  <p class="muted" style="text-align:center;margin-top:24px">Változat: v${VALTOZAT} · <a href="#" onclick="frissit();return false">frissítés</a></p></div>`;}
 function pinDlg(i){
   numDlg(i<0?'Tulajdonosi jelszó':DOLGOZOK[i].nev+' – PIN', '', async v=>{
     const h=await lenyomat(v);
@@ -168,7 +173,7 @@ function render(){
   if(user.tulaj)tabs.push(['beall','Beállítások']);
   $('#app').innerHTML=`<div class="top"><h1>Zsömle</h1>${tabs.map(([k,n])=>`<button class="tab ${tab===k?'on':''}" onclick="tab='${k}';render()">${n}</button>`).join('')}
   <span class="sp"></span><span class="net" id="fuggo">${varakozik?varakozik+' felküldésre vár':''}</span><span class="net">${navigator.onLine?'online':'offline – helyben mentve'}</span>
-  <span class="who">${user.nev}</span><button class="tab" onclick="user=null;tulajJelszo=null;kosar=[];render()">Kilépés</button></div><main id="main"></main>`;
+  <span class="who">${user.nev}</span><button class="tab" title="Új változat betöltése" onclick="frissit()">v${VALTOZAT} ↻</button><button class="tab" onclick="user=null;tulajJelszo=null;kosar=[];render()">Kilépés</button></div><main id="main"></main>`;
   ({elad:saleView,sut:bakeView,mar:leftView,penz:penzView,stat:statView,beall:setView})[tab]();}
 
 // ---- eladás --------------------------------------------------------------------
@@ -362,7 +367,8 @@ async function termekekBetolt(){
   try{const c=localStorage.getItem('termekek');if(c)return JSON.parse(c);}catch(e){}
   return await (await fetch('termekek.json')).json();}
 (async()=>{await openDB();TERMEKEK=await termekekBetolt();szinkron();
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
+    let ujra=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!ujra){ujra=true;location.reload();}});}
   const q=new URLSearchParams(location.search);
   if(q.get('demo')){await demo(q.get('demo'));}
   render();})();
