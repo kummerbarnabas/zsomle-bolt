@@ -89,6 +89,9 @@ const DOLGOZOK = [
   {nev:'Niki',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'},
   {nev:'Ildi',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'}];
 const TULAJ_H = 'a623a76850b821af97cc29e48e64916730601a751285edd0bb773991ea4d7c83';
+// Bevezetési időszak (a tulajdonos döntése, 2026-10-17): a dolgozók egyelőre csak a sütést és a maradékot kezelik.
+// Az eladás bekapcsolásához ide kell felvenni az 'elad' fület.
+const DOLGOZOI_FULEK = ['sut','mar'];
 let tulajJelszo = null; // csak a memóriában, a szerveres statisztikához
 async function lenyomat(pin){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('zsomle:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 // Külső kapcsolatok: kiépítve, de a felhasználó döntése szerint (2026-10-16) kikapcsolva.
@@ -137,7 +140,7 @@ function loginView(){
 function pinDlg(i){
   numDlg(i<0?'Tulajdonosi jelszó':DOLGOZOK[i].nev+' – PIN', '', async v=>{
     const h=await lenyomat(v);
-    if(i<0? h===TULAJ_H : h===DOLGOZOK[i].h){user=i<0?{nev:'Tulajdonos',tulaj:true}:{nev:DOLGOZOK[i].nev};if(i<0)tulajJelszo=v;tab=user.tulaj?'stat':'elad';render();}
+    if(i<0? h===TULAJ_H : h===DOLGOZOK[i].h){user=i<0?{nev:'Tulajdonos',tulaj:true}:{nev:DOLGOZOK[i].nev};if(i<0)tulajJelszo=v;tab=user.tulaj?'stat':DOLGOZOI_FULEK[0];render();}
     else toast('Hibás PIN');}, true, '', i<0?0:4);}
 
 // ---- számbillentyűzet ------------------------------------------------------------
@@ -155,7 +158,8 @@ function numDlg(title,init,done,pw,unit,maxlen){
 // ---- fő nézet ------------------------------------------------------------------
 function render(){
   if(!user)return loginView();
-  const tabs=[['elad','Eladás'],['sut','Sütés'],['mar','Maradék / selejt'],['stat','Statisztika']];
+  let tabs=[['elad','Eladás'],['sut','Sütés'],['mar','Maradék / selejt'],['stat','Statisztika']];
+  if(!user.tulaj){tabs=tabs.filter(([k])=>DOLGOZOI_FULEK.includes(k));if(!DOLGOZOI_FULEK.includes(tab))tab=DOLGOZOI_FULEK[0];}
   if(user.tulaj)tabs.push(['beall','Beállítások']);
   $('#app').innerHTML=`<div class="top"><h1>Zsömle</h1>${tabs.map(([k,n])=>`<button class="tab ${tab===k?'on':''}" onclick="tab='${k}';render()">${n}</button>`).join('')}
   <span class="sp"></span><span class="net" id="fuggo">${varakozik?varakozik+' felküldésre vár':''}</span><span class="net">${navigator.onLine?'online':'offline – helyben mentve'}</span>
