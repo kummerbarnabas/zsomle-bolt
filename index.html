@@ -215,7 +215,12 @@ async function bakeView(){
   const forn=TERMEKEK.filter(t=>t.kat==='Fornetti');
   $('#main').innerHTML=`<div class="sale"><div class="left"><div class="muted" style="padding:10px">Koppints a termékre, és írd be, hány darabot sütöttél. Az időpont magától mentődik.</div>
    <div class="grid">${forn.map(t=>csempe(t,`sut(${t.id})`,false)).join('')}</div></div>
-   <div class="cart"><h2>Mai sütések</h2><div class="items">${today.map(s=>`<div class="it"><span class="n">${s.nev}<br><span class="muted">${new Date(s.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${s.db} db · ${s.dolgozo}</span></span></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;}
+   <div class="cart"><h2>Mai sütések</h2><div class="items">${today.map(s=>`<div class="it"${+s.db===0?' style="opacity:.5"':''}><span class="n">${s.nev}<br><span class="muted">${new Date(s.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${+s.db===0?'törölve':s.db+' db'} · ${s.dolgozo}${s.javitva?` · javítva (eredetileg ${s.eredeti_db} db, ${s.javito})`:''}</span></span><button onclick="sutJavit('${s.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;}
+// Sütés javítása (2026-10-17): helyes darabszám; 0 = törlés. Az eredeti érték és a javító megmarad.
+async function sutJavit(rid){const s=(await all('sutes')).find(x=>x.id===rid);if(!s)return;
+  numDlg(s.nev+' – eddig '+s.db+' db; helyes szám (0 = törlés)','',async v=>{if(v===''||isNaN(+v))return;const n=+v;if(n===+s.db)return;
+    await put('sutes',{...s,db:n,eredeti_db:s.eredeti_db??s.db,javitva:nowISO(),javito:user.nev,szinkron:false});
+    toast(n===0?'Sütés törölve':'Javítva: '+n+' db');bakeView();szinkron();},false,'darab');}
 function sut(id){const t=TERMEKEK.find(x=>x.id===id);numDlg(t.nev+' – sütés','',async v=>{const n=+v;if(n>0){await put('sutes',{id:uid(),ido:nowISO(),termek_id:id,nev:t.nev,db:n,dolgozo:user.nev,szinkron:false});toast(n+' db mentve');bakeView();}},false,'darab');}
 
 // ---- maradék és selejt ----------------------------------------------------------
