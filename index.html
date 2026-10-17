@@ -271,13 +271,15 @@ function szamolDlg(tipus){const nyit=tipus==='nyito';
    <table style="width:100%;font-size:17px">${CIMLET.map(c=>`<tr><td style="padding:4px 6px">${c.toLocaleString('hu-HU')} Ft</td>
    <td><input data-c="${c}" type="number" inputmode="numeric" min="0" placeholder="0" style="width:90px;font-size:18px;padding:6px;text-align:right"> db</td>
    <td id="r${c}" style="text-align:right;padding:4px 6px;color:#7a6a58">–</td></tr>`).join('')}
+   <tr><td style="padding:4px 6px">Fiók (egy összegben)</td><td><input id="fiok" type="number" inputmode="numeric" min="0" placeholder="0" style="width:120px;font-size:18px;padding:6px;text-align:right"> Ft</td><td id="rfiok" style="text-align:right;padding:4px 6px;color:#7a6a58">–</td></tr>
    <tr><td style="padding:8px 6px"><b>Összesen</b></td><td></td><td id="szt" style="text-align:right;padding:8px 6px;font-size:20px"><b>0 Ft</b></td></tr></table>
    <div class="row"><button data-k="x">Mégse</button><button class="prim" data-k="ok">Mentés</button></div></div>`;
   document.body.appendChild(m);
-  const szum=()=>{let t=0;m.querySelectorAll('input[data-c]').forEach(i=>{const c=+i.dataset.c,d=Math.max(0,Math.floor(+i.value||0));t+=c*d;m.querySelector('#r'+c).textContent=d?ft(c*d):'–';});m.querySelector('#szt').innerHTML='<b>'+ft(t)+'</b>';return t;};
+  const szum=()=>{let t=0;m.querySelectorAll('input[data-c]').forEach(i=>{const c=+i.dataset.c,d=Math.max(0,Math.floor(+i.value||0));t+=c*d;m.querySelector('#r'+c).textContent=d?ft(c*d):'–';});const fk=Math.max(0,Math.round(+m.querySelector('#fiok').value||0));t+=fk;m.querySelector('#rfiok').textContent=fk?ft(fk):'–';m.querySelector('#szt').innerHTML='<b>'+ft(t)+'</b>';return t;};
   m.addEventListener('input',szum);
   m.onclick=async e=>{const k=e.target.dataset.k;if(!k)return;if(k==='x'){m.remove();return;}
     const cim={};m.querySelectorAll('input[data-c]').forEach(i=>{const d=Math.max(0,Math.floor(+i.value||0));if(d)cim[i.dataset.c]=d;});
+    const fk=Math.max(0,Math.round(+m.querySelector('#fiok').value||0));if(fk)cim.fiok=fk;
     const t=szum();m.remove();
     await put('penz',{id:uid(),ido:nowISO(),dolgozo:user.nev,tipus,osszeg:t,cimletek:cim,megjegyzes:'címletes számolás',szinkron:false});
     toast((nyit?'Nyitó':'Záró')+' egyenleg: '+ft(t));penzView();szinkron();};}
@@ -304,7 +306,7 @@ async function penzView(){
     <tr><td><b>Eltérés</b></td><td style="text-align:right;color:${S.zaro-kassza===0?'#2e7d32':'#c0392b'}"><b>${S.zaro-kassza===0?'egyezik':(S.zaro-kassza>0?'többlet + ':'hiány − ')+ft(Math.abs(S.zaro-kassza))}</b></td><td></td></tr>`:''}
     <tr><td><b>Széf mai változása</b></td><td></td><td style="text-align:right"><b>${szef>=0?'+ ':'− '}${ft(Math.abs(szef))}</b></td></tr></table>
     <p class="muted">A készpénzes eladás csak az ebben a programban rögzített eladásokat tartalmazza. Amíg az eladást a pénztárgépen ütik, a pénztárgép napi készpénzét kell hozzáadni.</p></div></div>
-   <div class="cart"><h2>Mai pénzmozgás</h2><div class="items">${P.map(x=>`<div class="it"${+x.osszeg===0&&x.javitva?' style="opacity:.5"':''}><span class="n">${(PT[x.tipus]||[x.tipus])[0]}: ${+x.osszeg===0&&x.javitva?'törölve':ft(x.osszeg)}<br><span class="muted">${new Date(x.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${x.dolgozo}${x.cimletek&&Object.keys(x.cimletek).length?' · '+Object.entries(x.cimletek).sort((a,b)=>b[0]-a[0]).map(([c,d])=>d+'×'+(+c).toLocaleString('hu-HU')).join(', '):(x.megjegyzes?' · '+x.megjegyzes:'')}${x.javitva?` · javítva (eredetileg ${ft(x.eredeti_osszeg)}, ${x.javito})`:''}</span></span><button class="jv" onclick="penzJavit('${x.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;}
+   <div class="cart"><h2>Mai pénzmozgás</h2><div class="items">${P.map(x=>`<div class="it"${+x.osszeg===0&&x.javitva?' style="opacity:.5"':''}><span class="n">${(PT[x.tipus]||[x.tipus])[0]}: ${+x.osszeg===0&&x.javitva?'törölve':ft(x.osszeg)}<br><span class="muted">${new Date(x.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${x.dolgozo}${x.cimletek&&Object.keys(x.cimletek).length?' · '+Object.entries(x.cimletek).filter(([c])=>c!=='fiok').sort((a,b)=>b[0]-a[0]).map(([c,d])=>d+'×'+(+c).toLocaleString('hu-HU')).concat(x.cimletek.fiok?['fiók '+ft(x.cimletek.fiok)]:[]).join(', '):(x.megjegyzes?' · '+x.megjegyzes:'')}${x.javitva?` · javítva (eredetileg ${ft(x.eredeti_osszeg)}, ${x.javito})`:''}</span></span><button class="jv" onclick="penzJavit('${x.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;}
 
 // ---- statisztika ----------------------------------------------------------------
 let statNap=ma();
