@@ -93,9 +93,9 @@ const DOLGOZOK = [
   {nev:'Niki',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'},
   {nev:'Ildi',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'}];
 const TULAJ_H = 'a623a76850b821af97cc29e48e64916730601a751285edd0bb773991ea4d7c83';
-// Bevezetési időszak (a tulajdonos döntése, 2026-10-17): a dolgozók egyelőre a sütést, a maradékot és a napi pénzmozgást kezelik.
+// Dolgozói fülek (a tulajdonos döntése, 2026-10-17): eladás, sütés, maradék, pénzmozgás; a statisztika és a beállítások csak a tulajdonosé.
 // Az eladás bekapcsolásához ide kell felvenni az 'elad' fület.
-const DOLGOZOI_FULEK = ['sut','mar','penz'];
+const DOLGOZOI_FULEK = ['elad','sut','mar','penz'];
 let tulajJelszo = null; // csak a memóriában, a szerveres statisztikához
 async function lenyomat(pin){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('zsomle:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 // Külső kapcsolatok: kiépítve, de a felhasználó döntése szerint (2026-10-16) kikapcsolva.
