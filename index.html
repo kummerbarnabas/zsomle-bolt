@@ -34,6 +34,9 @@ main{height:calc(100vh - 62px);overflow:hidden}
 .p .kep{width:100%;aspect-ratio:4/3;border-radius:8px;background:#efe7dc center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#b9a892;font-size:26px;font-weight:700}
 .p .n{font-size:14px;line-height:1.2;min-height:34px}
 .p .a{font-weight:700;color:var(--brand)}
+.p{position:relative}
+.p .al{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:13px;background:#c0392b;color:#fff;font-size:13px;font-weight:700;line-height:26px}
+.aldlg{background:#fff;border-radius:12px;padding:18px;max-width:420px;font-size:16px;line-height:1.4}
 .p.kis{padding:10px;min-height:70px;justify-content:center}
 .cart{background:var(--card);border-left:1px solid var(--line);display:flex;flex-direction:column}
 .cart h2{margin:12px 14px 6px;font-size:18px}
@@ -121,6 +124,9 @@ setInterval(szinkron,60000);
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
 const $=s=>document.querySelector(s);
+function alDlg(id){const t=TERMEKEK.find(x=>x.id===id);const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="aldlg"><b>${t.rovid||t.nev}</b><br><br><b>Allergének:</b> ${t.allergen}<br><br><span class="muted">Forrás: ${t.allergen_forras||''}</span></div>`;
+  m.onclick=()=>m.remove();document.body.appendChild(m);}
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800);}
 
 // ---- belépés -------------------------------------------------------------------
@@ -175,7 +181,7 @@ function drawGrid(){
 // Csempe: felül a kép (a felhasználó készíti; addig helykitöltő), alatta a név és az ár.
 function csempe(t,onclick,arral){const src=t.foto&&(/^https?:/.test(t.foto)?t.foto:'foto/'+t.foto);const kep=src?`style="background:#fff url('${src}') center/contain no-repeat"`:'';
   return `<button class="p" onclick="${onclick}"><span class="kep" ${kep}>${t.foto?'':(t.rovid||t.nev).slice(0,1)}</span>
-   <span class="n">${t.rovid||t.nev}</span>${arral?`<span class="a">${ft(t.ar)}${t.egyseg==='kg'?'/kg':''}</span>`:''}</button>`;}
+   ${t.allergen?`<span class="al" onclick="event.stopPropagation();alDlg(${t.id})">A</span>`:''}<span class="n">${t.rovid||t.nev}</span>${arral?`<span class="a">${ft(t.ar)}${t.egyseg==='kg'?'/kg':''}</span>`:''}</button>`;}
 function addItem(id){
   const t=TERMEKEK.find(x=>x.id===id);
   if(t.egyseg==='kg') return numDlg(t.nev,'',v=>{const g=+v;if(g>0){kosar.push({id,nev:t.nev,egyseg:'g',menny:g,ar:t.ar,osszeg:t.ar*g/1000});drawCart();}},false,'gramm (a mérlegről)');
@@ -255,7 +261,7 @@ function setView(){
 // ---- indulás ---------------------------------------------------------------------
 window.addEventListener('online',()=>{render();szinkron();});window.addEventListener('offline',render);
 async function termekekBetolt(){
-  try{const r=await sb('termekek?select=id,nev,rovid,kat,ar,egyseg,foto,sorrend&order=sorrend');if(r.ok){const d=await r.json();if(d.length){localStorage.setItem('termekek',JSON.stringify(d));return d;}}}catch(e){}
+  try{const r=await sb('termekek?select=id,nev,rovid,kat,ar,egyseg,foto,sorrend,allergen,allergen_forras&order=sorrend');if(r.ok){const d=await r.json();if(d.length){localStorage.setItem('termekek',JSON.stringify(d));return d;}}}catch(e){}
   try{const c=localStorage.getItem('termekek');if(c)return JSON.parse(c);}catch(e){}
   return await (await fetch('termekek.json')).json();}
 (async()=>{await openDB();TERMEKEK=await termekekBetolt();szinkron();
