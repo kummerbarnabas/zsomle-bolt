@@ -265,7 +265,7 @@ function txtDlg(title,done){const m=document.createElement('div');m.className='m
   m.onclick=e=>{const k=e.target.dataset.k;if(!k)return;const v=k==='ok'?i.value.trim():'';m.remove();done(v);};}
 // Címletes pénzszámolás (2026-10-17): nyitáskor → nyitó egyenleg, záráskor → záró egyenleg, eltéréssel.
 const CIMLET=[20000,10000,5000,2000,1000,500,200,100,50,20,10,5];
-function szamolDlg(tipus){const nyit=tipus==='nyito';
+function szamolDlg(tipus,regi){const nyit=tipus==='nyito';const VK='szamolas_'+tipus+'_'+ma();
   const m=document.createElement('div');m.className='modal';
   m.innerHTML=`<div class="dlg" style="width:min(520px,94vw);max-height:92vh;overflow-y:auto"><h3>Pénzszámolás – ${nyit?'nyitás':'zárás'}</h3>
    <table style="width:100%;font-size:17px">${CIMLET.map(c=>`<tr><td style="padding:4px 6px">${c.toLocaleString('hu-HU')} Ft</td>
@@ -275,18 +275,24 @@ function szamolDlg(tipus){const nyit=tipus==='nyito';
    <tr><td style="padding:8px 6px"><b>Összesen</b></td><td></td><td id="szt" style="text-align:right;padding:8px 6px;font-size:20px"><b>0 Ft</b></td></tr></table>
    <div class="row"><button data-k="x">Mégse</button><button class="prim" data-k="ok">Mentés</button></div></div>`;
   document.body.appendChild(m);
+  // Előtöltés: javításnál a mentett címletek, egyébként a félretett (még nem mentett) számolás.
+  let elo=regi&&regi.cimletek||null;if(!elo){try{elo=JSON.parse(localStorage.getItem(VK)||'null');}catch(e){}}
+  if(elo){m.querySelectorAll('input[data-c]').forEach(i=>{if(elo[i.dataset.c])i.value=elo[i.dataset.c];});if(elo.fiok)m.querySelector('#fiok').value=elo.fiok;}
+  const felretesz=()=>{const o={};m.querySelectorAll('input[data-c]').forEach(i=>{if(+i.value)o[i.dataset.c]=+i.value;});if(+m.querySelector('#fiok').value)o.fiok=+m.querySelector('#fiok').value;try{localStorage.setItem(VK,JSON.stringify(o));}catch(e){}};
   const szum=()=>{let t=0;m.querySelectorAll('input[data-c]').forEach(i=>{const c=+i.dataset.c,d=Math.max(0,Math.floor(+i.value||0));t+=c*d;m.querySelector('#r'+c).textContent=d?ft(c*d):'–';});const fk=Math.max(0,Math.round(+m.querySelector('#fiok').value||0));t+=fk;m.querySelector('#rfiok').textContent=fk?ft(fk):'–';m.querySelector('#szt').innerHTML='<b>'+ft(t)+'</b>';return t;};
-  m.addEventListener('input',szum);
+  m.addEventListener('input',()=>{szum();if(!regi)felretesz();});szum();
   m.onclick=async e=>{const k=e.target.dataset.k;if(!k)return;if(k==='x'){m.remove();return;}
     const cim={};m.querySelectorAll('input[data-c]').forEach(i=>{const d=Math.max(0,Math.floor(+i.value||0));if(d)cim[i.dataset.c]=d;});
     const fk=Math.max(0,Math.round(+m.querySelector('#fiok').value||0));if(fk)cim.fiok=fk;
     const t=szum();m.remove();
-    await put('penz',{id:uid(),ido:nowISO(),dolgozo:user.nev,tipus,osszeg:t,cimletek:cim,megjegyzes:'címletes számolás',szinkron:false});
+    if(regi){await put('penz',{...regi,osszeg:t,cimletek:cim,eredeti_osszeg:regi.eredeti_osszeg??regi.osszeg,javitva:nowISO(),javito:user.nev,szinkron:false});}
+    else{await put('penz',{id:uid(),ido:nowISO(),dolgozo:user.nev,tipus,osszeg:t,cimletek:cim,megjegyzes:'címletes számolás',szinkron:false});try{localStorage.removeItem(VK);}catch(e){}}
     toast((nyit?'Nyitó':'Záró')+' egyenleg: '+ft(t));penzView();szinkron();};}
 function penzUj(tipus){if(tipus==='nyito'||tipus==='zaro')return szamolDlg(tipus);numDlg(PT[tipus][0]+' – összeg (Ft)','',v=>{const n=+v;if(!(n>0))return;
   const ment=async megj=>{await put('penz',{id:uid(),ido:nowISO(),dolgozo:user.nev,tipus,osszeg:n,megjegyzes:megj||null,szinkron:false});toast(PT[tipus][0]+': '+ft(n));penzView();szinkron();};
   if(tipus.startsWith('vasarlas')||tipus.startsWith('kivet'))txtDlg(tipus.startsWith('vasarlas')?'Mit vettél, hol?':'Megjegyzés (ki, mire)',ment);else ment(null);},false,'Ft');}
 async function penzJavit(rid){const s=(await all('penz')).find(x=>x.id===rid);if(!s)return;
+  if((s.tipus==='nyito'||s.tipus==='zaro')&&s.cimletek)return szamolDlg(s.tipus,s);
   numDlg(PT[s.tipus][0]+' – eddig '+ft(s.osszeg)+'; helyes összeg (0 = törlés)','',async v=>{if(v===''||isNaN(+v))return;const n=+v;if(n===+s.osszeg)return;
     await put('penz',{...s,osszeg:n,eredeti_osszeg:s.eredeti_osszeg??s.osszeg,javitva:nowISO(),javito:user.nev,szinkron:false});toast(n===0?'Törölve':'Javítva: '+ft(n));penzView();szinkron();},false,'Ft');}
 async function penzView(){
