@@ -47,6 +47,7 @@ main{height:calc(100vh - 62px);height:calc(100dvh - 62px);overflow:hidden}
 .it{display:flex;align-items:center;gap:6px;padding:8px 4px;border-bottom:1px solid var(--line)}
 .it .n{flex:1;font-size:14px}
 .it button{width:36px;height:36px;background:var(--bg);font-size:20px}
+.it button.jv{width:auto;padding:0 12px;font-size:15px;flex:none}
 .sum{padding:12px 14px;font-size:26px;font-weight:700;display:flex;justify-content:space-between}
 .pay{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 10px 12px}
 .pay button{padding:20px 0;font-size:19px;color:#fff;background:var(--ok)}
@@ -92,9 +93,9 @@ const DOLGOZOK = [
   {nev:'Niki',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'},
   {nev:'Ildi',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'}];
 const TULAJ_H = 'a623a76850b821af97cc29e48e64916730601a751285edd0bb773991ea4d7c83';
-// Bevezetési időszak (a tulajdonos döntése, 2026-10-17): a dolgozók egyelőre csak a sütést és a maradékot kezelik.
+// Bevezetési időszak (a tulajdonos döntése, 2026-10-17): a dolgozók egyelőre a sütést, a maradékot és a napi pénzmozgást kezelik.
 // Az eladás bekapcsolásához ide kell felvenni az 'elad' fület.
-const DOLGOZOI_FULEK = ['sut','mar'];
+const DOLGOZOI_FULEK = ['sut','mar','penz'];
 let tulajJelszo = null; // csak a memóriában, a szerveres statisztikához
 async function lenyomat(pin){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('zsomle:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 // Külső kapcsolatok: kiépítve, de a felhasználó döntése szerint (2026-10-16) kikapcsolva.
@@ -103,8 +104,8 @@ const NYITVA = {1:[5,18],2:[5,18],3:[5,18],4:[5,18],5:[5,18],6:[6,12]}; // hétf
 
 // ---- tárolás: IndexedDB, internet nélkül is ------------------------------------
 let db;
-function openDB(){return new Promise((ok,err)=>{const r=indexedDB.open('zsomle-bolt',1);
-  r.onupgradeneeded=()=>{const d=r.result;for(const s of ['eladas','sutes','maradek'])d.createObjectStore(s,{keyPath:'id'});};
+function openDB(){return new Promise((ok,err)=>{const r=indexedDB.open('zsomle-bolt',2);
+  r.onupgradeneeded=()=>{const d=r.result;for(const s of ['eladas','sutes','maradek','penz'])if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'});};
   r.onsuccess=()=>{db=r.result;ok()};r.onerror=err;});}
 function put(store,obj){return new Promise(ok=>{const t=db.transaction(store,'readwrite');t.objectStore(store).put(obj);t.oncomplete=ok;});}
 function putMany(store,arr){return new Promise(ok=>{const t=db.transaction(store,'readwrite');const s=t.objectStore(store);arr.forEach(o=>s.put(o));t.oncomplete=ok;});}
@@ -117,13 +118,13 @@ const ma=()=>napja(new Date().toISOString());
 let szinkronFut=false, varakozik=0;
 async function szinkron(){
   if(szinkronFut||!navigator.onLine)return;szinkronFut=true;
-  try{const L={};for(const s of ['eladas','sutes','maradek'])L[s]=(await all(s)).filter(r=>!r.szinkron&&!r.demo);
-    const n=L.eladas.length+L.sutes.length+L.maradek.length;
+  try{const L={};for(const s of ['eladas','sutes','maradek','penz'])L[s]=(await all(s)).filter(r=>!r.szinkron&&!r.demo);
+    const n=L.eladas.length+L.sutes.length+L.maradek.length+L.penz.length;
     if(n){const r=await fetch(SB_URL+'/rest/v1/rpc/bekuld',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},
-        body:JSON.stringify({p_eladas:L.eladas,p_sutes:L.sutes,p_maradek:L.maradek})});
+        body:JSON.stringify({p_eladas:L.eladas,p_sutes:L.sutes,p_maradek:L.maradek,p_penz:L.penz})});
       if(r.ok){for(const s in L)await putMany(s,L[s].map(x=>({...x,szinkron:true})));}}
   }catch(e){}finally{szinkronFut=false;varakozik=await fuggo();const e=document.getElementById('fuggo');if(e)e.textContent=varakozik?varakozik+' felküldésre vár':'';}}
-async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek'])n+=(await all(s)).filter(r=>!r.szinkron&&!r.demo).length;return n;}
+async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'])n+=(await all(s)).filter(r=>!r.szinkron&&!r.demo).length;return n;}
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
@@ -162,13 +163,13 @@ function numDlg(title,init,done,pw,unit,maxlen){
 // ---- fő nézet ------------------------------------------------------------------
 function render(){
   if(!user)return loginView();
-  let tabs=[['elad','Eladás'],['sut','Sütés'],['mar','Maradék / selejt'],['stat','Statisztika']];
+  let tabs=[['elad','Eladás'],['sut','Sütés'],['mar','Maradék / selejt'],['penz','Pénz'],['stat','Statisztika']];
   if(!user.tulaj){tabs=tabs.filter(([k])=>DOLGOZOI_FULEK.includes(k));if(!DOLGOZOI_FULEK.includes(tab))tab=DOLGOZOI_FULEK[0];}
   if(user.tulaj)tabs.push(['beall','Beállítások']);
   $('#app').innerHTML=`<div class="top"><h1>Zsömle</h1>${tabs.map(([k,n])=>`<button class="tab ${tab===k?'on':''}" onclick="tab='${k}';render()">${n}</button>`).join('')}
   <span class="sp"></span><span class="net" id="fuggo">${varakozik?varakozik+' felküldésre vár':''}</span><span class="net">${navigator.onLine?'online':'offline – helyben mentve'}</span>
   <span class="who">${user.nev}</span><button class="tab" onclick="user=null;tulajJelszo=null;kosar=[];render()">Kilépés</button></div><main id="main"></main>`;
-  ({elad:saleView,sut:bakeView,mar:leftView,stat:statView,beall:setView})[tab]();}
+  ({elad:saleView,sut:bakeView,mar:leftView,penz:penzView,stat:statView,beall:setView})[tab]();}
 
 // ---- eladás --------------------------------------------------------------------
 // Keresés: kis- és nagybetű, valamint ékezet nélkül is talál (pl. „pogacsa”).
@@ -220,7 +221,7 @@ async function bakeView(){
   $('#main').innerHTML=`<div class="sale"><div class="left"><div class="muted" style="padding:10px">Koppints a termékre, és írd be, hány darabot sütöttél. Az időpont magától mentődik.</div>
    <input class="search" placeholder="Keresés…" value="${sutKeres}" oninput="sutKeres=this.value;sutGrid()">
    <div class="grid" id="sgrid"></div></div>
-   <div class="cart"><h2>Mai sütések</h2><div class="items">${today.map(s=>`<div class="it"${+s.db===0?' style="opacity:.5"':''}><span class="n">${s.nev}<br><span class="muted">${new Date(s.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${+s.db===0?'törölve':s.db+' db'} · ${s.dolgozo}${s.javitva?` · javítva (eredetileg ${s.eredeti_db} db, ${s.javito})`:''}</span></span><button onclick="sutJavit('${s.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;sutGrid();}
+   <div class="cart"><h2>Mai sütések</h2><div class="items">${today.map(s=>`<div class="it"${+s.db===0?' style="opacity:.5"':''}><span class="n">${s.nev}<br><span class="muted">${new Date(s.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${+s.db===0?'törölve':s.db+' db'} · ${s.dolgozo}${s.javitva?` · javítva (eredetileg ${s.eredeti_db} db, ${s.javito})`:''}</span></span><button class="jv" onclick="sutJavit('${s.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;sutGrid();}
 // Sütés javítása (2026-10-17): helyes darabszám; 0 = törlés. Az eredeti érték és a javító megmarad.
 async function sutJavit(rid){const s=(await all('sutes')).find(x=>x.id===rid);if(!s)return;
   numDlg(s.nev+' – eddig '+s.db+' db; helyes szám (0 = törlés)','',async v=>{if(v===''||isNaN(+v))return;const n=+v;if(n===+s.db)return;
@@ -241,7 +242,7 @@ async function leftView(){
    <span style="width:16px"></span>${kats.map(c=>`<button class="${c===marKat?'on':''}" onclick="marKat='${c}';leftView()">${c}</button>`).join('')}</div>
    <input class="search" placeholder="Keresés (minden kategóriában)…" value="${marKeres}" oninput="marKeres=this.value;marGrid()">
    <div class="grid" id="mgrid"></div></div>
-   <div class="cart"><h2>Mai rögzítés</h2><div class="items">${today.map(s=>`<div class="it"${+s.menny===0&&s.javitva?' style="opacity:.5"':''}><span class="n">${s.nev}<br><span class="muted">${s.tipus==='selejt'?'selejt':'maradék'} · ${+s.menny===0&&s.javitva?'törölve':s.menny+' '+s.egyseg} · ${s.dolgozo}${s.javitva?` · javítva (eredetileg ${s.eredeti_menny} ${s.egyseg}, ${s.javito})`:''}</span></span><button onclick="marJavit('${s.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;marGrid();}
+   <div class="cart"><h2>Mai rögzítés</h2><div class="items">${today.map(s=>`<div class="it"${+s.menny===0&&s.javitva?' style="opacity:.5"':''}><span class="n">${s.nev}<br><span class="muted">${s.tipus==='selejt'?'selejt':'maradék'} · ${+s.menny===0&&s.javitva?'törölve':s.menny+' '+s.egyseg} · ${s.dolgozo}${s.javitva?` · javítva (eredetileg ${s.eredeti_menny} ${s.egyseg}, ${s.javito})`:''}</span></span><button class="jv" onclick="marJavit('${s.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;marGrid();}
 // Maradék / selejt javítása (2026-10-17): helyes mennyiség; 0 = törlés. Az eredeti érték és a javító megmarad.
 async function marJavit(rid){const s=(await all('maradek')).find(x=>x.id===rid);if(!s)return;
   numDlg(s.nev+' – eddig '+s.menny+' '+s.egyseg+'; helyes szám (0 = törlés)','',async v=>{if(v===''||isNaN(+v))return;const n=+v;if(n===+s.menny)return;
@@ -252,6 +253,35 @@ function marGrid(){const l=TERMEKEK.filter(t=>marKeres?MAR_KATS.includes(t.kat)&
   $('#mgrid').innerHTML=l.map(t=>csempe(t,`mar(${t.id})`,false)).join('')||'<p class="muted" style="padding:10px">Nincs találat</p>';}
 function mar(id){const t=TERMEKEK.find(x=>x.id===id);const eg=t.egyseg==='kg'?'db':'db';
   numDlg(t.nev+' – '+(marTipus==='selejt'?'selejt':'maradék'),'',async v=>{const n=+v;if(v!==''){await put('maradek',{id:uid(),ido:nowISO(),termek_id:id,nev:t.nev,tipus:marTipus,menny:n,egyseg:eg,dolgozo:user.nev,szinkron:false});toast('Mentve');leftView();}},false,'darab');}
+
+// ---- pénzmozgás (a tulajdonos kérése, 2026-10-17) ------------------------------------
+const PT={nyito:['Nyitó egyenleg',1],vasarlas:['Vásárlás (kiadás)',-1],kivet:['Kivét',-1],szefbe:['Széfbe',-1],szefbol:['Széfből',1]};
+function txtDlg(title,done){const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="dlg"><h3>${title}</h3><input id="tx" style="font-size:18px;width:100%;box-sizing:border-box;padding:10px" placeholder="pl. Lidl – tej, vagy üresen hagyható">
+  <div class="row"><button data-k="x">Kihagyom</button><button class="prim" data-k="ok">OK</button></div></div>`;
+  document.body.appendChild(m);const i=m.querySelector('#tx');setTimeout(()=>i.focus(),50);
+  m.onclick=e=>{const k=e.target.dataset.k;if(!k)return;const v=k==='ok'?i.value.trim():'';m.remove();done(v);};}
+function penzUj(tipus){numDlg(PT[tipus][0]+' – összeg (Ft)','',v=>{const n=+v;if(!(n>0))return;
+  const ment=async megj=>{await put('penz',{id:uid(),ido:nowISO(),dolgozo:user.nev,tipus,osszeg:n,megjegyzes:megj||null,szinkron:false});toast(PT[tipus][0]+': '+ft(n));penzView();szinkron();};
+  if(tipus==='vasarlas'||tipus==='kivet')txtDlg(tipus==='vasarlas'?'Mit vettél, hol?':'Megjegyzés (ki, mire)',ment);else ment(null);},false,'Ft');}
+async function penzJavit(rid){const s=(await all('penz')).find(x=>x.id===rid);if(!s)return;
+  numDlg(PT[s.tipus][0]+' – eddig '+ft(s.osszeg)+'; helyes összeg (0 = törlés)','',async v=>{if(v===''||isNaN(+v))return;const n=+v;if(n===+s.osszeg)return;
+    await put('penz',{...s,osszeg:n,eredeti_osszeg:s.eredeti_osszeg??s.osszeg,javitva:nowISO(),javito:user.nev,szinkron:false});toast(n===0?'Törölve':'Javítva: '+ft(n));penzView();szinkron();},false,'Ft');}
+async function penzView(){
+  const nap=ma();const P=(await all('penz')).filter(x=>napja(x.ido)===nap).sort((a,b)=>a.ido.localeCompare(b.ido));
+  const kp=(await all('eladas')).filter(e=>napja(e.ido)===nap&&e.fizetes==='keszpenz').reduce((s,e)=>s+(+e.osszeg),0);
+  const S={};Object.keys(PT).forEach(k=>S[k]=0);P.forEach(x=>S[x.tipus]+=(+x.osszeg));
+  const kassza=S.nyito+kp-S.vasarlas-S.kivet-S.szefbe+S.szefbol;
+  $('#main').innerHTML=`<div class="sale"><div class="left" style="overflow-y:auto">
+   <div class="muted" style="padding:10px">Koppints a tételre, írd be az összeget. A vásárlásnál és a kivétnél írd mellé, mire ment.</div>
+   <div class="grid" style="flex:none;padding-bottom:10px">${Object.entries(PT).map(([k,[n,e]])=>`<button class="p kis" onclick="penzUj('${k}')"><span class="n" style="font-size:18px;font-weight:600">${n}</span><span class="muted">${e>0?'+ a kasszába':'− a kasszából'}</span></button>`).join('')}</div>
+   <div class="box" style="margin:10px"><h3>Mai összesítő</h3><table>
+    ${Object.entries(PT).map(([k,[n,e]])=>`<tr><td>${n}</td><td style="text-align:right">${e>0?'+':'−'} ${ft(S[k])}</td></tr>`).join('')}
+    <tr><td>Készpénzes eladás (ezen a gépen)</td><td style="text-align:right">+ ${ft(kp)}</td></tr>
+    <tr><td><b>Várható készpénz a kasszában</b></td><td style="text-align:right"><b>${ft(kassza)}</b></td></tr>
+    <tr><td class="muted">Széf mai változása</td><td class="muted" style="text-align:right">${S.szefbe-S.szefbol>=0?'+':'−'} ${ft(Math.abs(S.szefbe-S.szefbol))}</td></tr></table>
+    <p class="muted">A készpénzes eladás csak az ebben a programban rögzített eladásokat tartalmazza. Amíg az eladást a pénztárgépen ütik, a pénztárgép napi készpénzét kell hozzáadni.</p></div></div>
+   <div class="cart"><h2>Mai pénzmozgás</h2><div class="items">${P.map(x=>`<div class="it"${+x.osszeg===0&&x.javitva?' style="opacity:.5"':''}><span class="n">${PT[x.tipus][0]}: ${+x.osszeg===0&&x.javitva?'törölve':ft(x.osszeg)}<br><span class="muted">${new Date(x.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${x.dolgozo}${x.megjegyzes?' · '+x.megjegyzes:''}${x.javitva?` · javítva (eredetileg ${ft(x.eredeti_osszeg)}, ${x.javito})`:''}</span></span><button class="jv" onclick="penzJavit('${x.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;}
 
 // ---- statisztika ----------------------------------------------------------------
 let statNap=ma();
