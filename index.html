@@ -241,7 +241,12 @@ async function leftView(){
    <span style="width:16px"></span>${kats.map(c=>`<button class="${c===marKat?'on':''}" onclick="marKat='${c}';leftView()">${c}</button>`).join('')}</div>
    <input class="search" placeholder="Keresés (minden kategóriában)…" value="${marKeres}" oninput="marKeres=this.value;marGrid()">
    <div class="grid" id="mgrid"></div></div>
-   <div class="cart"><h2>Mai rögzítés</h2><div class="items">${today.map(s=>`<div class="it"><span class="n">${s.nev}<br><span class="muted">${s.tipus==='selejt'?'selejt':'maradék'} · ${s.menny} ${s.egyseg} · ${s.dolgozo}</span></span></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;marGrid();}
+   <div class="cart"><h2>Mai rögzítés</h2><div class="items">${today.map(s=>`<div class="it"${+s.menny===0&&s.javitva?' style="opacity:.5"':''}><span class="n">${s.nev}<br><span class="muted">${s.tipus==='selejt'?'selejt':'maradék'} · ${+s.menny===0&&s.javitva?'törölve':s.menny+' '+s.egyseg} · ${s.dolgozo}${s.javitva?` · javítva (eredetileg ${s.eredeti_menny} ${s.egyseg}, ${s.javito})`:''}</span></span><button onclick="marJavit('${s.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;marGrid();}
+// Maradék / selejt javítása (2026-10-17): helyes mennyiség; 0 = törlés. Az eredeti érték és a javító megmarad.
+async function marJavit(rid){const s=(await all('maradek')).find(x=>x.id===rid);if(!s)return;
+  numDlg(s.nev+' – eddig '+s.menny+' '+s.egyseg+'; helyes szám (0 = törlés)','',async v=>{if(v===''||isNaN(+v))return;const n=+v;if(n===+s.menny)return;
+    await put('maradek',{...s,menny:n,eredeti_menny:s.eredeti_menny??s.menny,javitva:nowISO(),javito:user.nev,szinkron:false});
+    toast(n===0?'Törölve':'Javítva: '+n+' '+s.egyseg);leftView();szinkron();},false,s.egyseg);}
 const MAR_KATS=['Kenyerek','Péksütemények','Sütemények','Fornetti','Hot dog és hamburger','Szendvicsek'];
 function marGrid(){const l=TERMEKEK.filter(t=>marKeres?MAR_KATS.includes(t.kat)&&talal(t,marKeres):t.kat===marKat);
   $('#mgrid').innerHTML=l.map(t=>csempe(t,`mar(${t.id})`,false)).join('')||'<p class="muted" style="padding:10px">Nincs találat</p>';}
