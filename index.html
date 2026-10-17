@@ -82,12 +82,12 @@ th:first-child,td:first-child{text-align:left}
 // bekuld() függvényt engedi (a jogokat lásd db/001_alap.sql, db/002_bekuldes.sql).
 const SB_URL='https://dqttcjxviijeopzbqfqq.supabase.co', SB_KEY='sb_publishable_S4aefwe9JNDz5hunZdHF9Q_iRBRbmvP';
 const sb=(path,opt={})=>fetch(SB_URL+'/rest/v1/'+path,{...opt,headers:{apikey:SB_KEY,'Content-Type':'application/json',...(opt.headers||{})}});
-// Dolgozók (a tulajdonos megadása, 2026-10-16). A PIN-ek helyett csak SHA-256('zsomle:'+PIN)
+// Dolgozók (a tulajdonos megadása, 2026-10-16; 2026-10-17 óta 4 jegyű PIN). A PIN-ek helyett csak SHA-256('zsomle:'+PIN)
 // lenyomat szerepel, mert a kód nyilvános tárhelyen van. Új dolgozó: lenyomat a README szerint.
 const DOLGOZOK = [
-  {nev:'Marcsi',h:'09dfb88cd0459a5763276403b0caa0851de0511b578c4fc13d07634b96e1fec1'},
-  {nev:'Niki',h:'996d96dc869bfea093a83a838e1c11ba0d22f9182c29cb569566d4b5007a5637'},
-  {nev:'Ildi',h:'2559e1f4a57b03cb669767c0789a9c8b70a26fe8c874c729e8b0312b1877296b'}];
+  {nev:'Marcsi',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'},
+  {nev:'Niki',h:'2d8639154005ec28d0cafe14cefb823ba22a10205776693aff5d0bc3c8d6ffdc'},
+  {nev:'Ildi',h:'ec76fd60a1cca8b22e79e80295e00b0771b07e487b6d5d700c499e3606c61889'}];
 const TULAJ_H = 'a623a76850b821af97cc29e48e64916730601a751285edd0bb773991ea4d7c83';
 let tulajJelszo = null; // csak a memóriában, a szerveres statisztikához
 async function lenyomat(pin){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('zsomle:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
@@ -138,10 +138,10 @@ function pinDlg(i){
   numDlg(i<0?'Tulajdonosi jelszó':DOLGOZOK[i].nev+' – PIN', '', async v=>{
     const h=await lenyomat(v);
     if(i<0? h===TULAJ_H : h===DOLGOZOK[i].h){user=i<0?{nev:'Tulajdonos',tulaj:true}:{nev:DOLGOZOK[i].nev};if(i<0)tulajJelszo=v;tab=user.tulaj?'stat':'elad';render();}
-    else toast('Hibás PIN');}, true);}
+    else toast('Hibás PIN');}, true, '', i<0?0:4);}
 
 // ---- számbillentyűzet ------------------------------------------------------------
-function numDlg(title,init,done,pw,unit){
+function numDlg(title,init,done,pw,unit,maxlen){
   const m=document.createElement('div');m.className='modal';
   m.innerHTML=`<div class="dlg"><h3>${title}</h3><input id="nv" ${pw?'type="password"':''} value="${init}" readonly>
   ${unit?`<div class="muted" style="text-align:center;margin-top:4px">${unit}</div>`:''}
@@ -150,7 +150,7 @@ function numDlg(title,init,done,pw,unit){
   document.body.appendChild(m);const inp=m.querySelector('#nv');
   m.onclick=e=>{const k=e.target.dataset.k;if(k===undefined)return;
     if(k==='x')m.remove();else if(k==='ok'){m.remove();done(inp.value);}
-    else if(k==='C')inp.value='';else if(k==='⌫')inp.value=inp.value.slice(0,-1);else inp.value+=k;};}
+    else if(k==='C')inp.value='';else if(k==='⌫')inp.value=inp.value.slice(0,-1);else{inp.value+=k;if(maxlen&&inp.value.length>=maxlen){m.remove();done(inp.value);}}};}
 
 // ---- fő nézet ------------------------------------------------------------------
 function render(){
