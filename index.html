@@ -40,6 +40,9 @@ main{height:calc(100vh - 62px);overflow:hidden}
 .p.kis{padding:10px;min-height:70px;justify-content:center}
 .cart{background:var(--card);border-left:1px solid var(--line);display:flex;flex-direction:column}
 .cart h2{margin:12px 14px 6px;font-size:18px}
+.mod{display:flex;gap:6px;margin:0 14px 8px}.mod button{flex:1;padding:12px;font-size:17px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.mod button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.afa5{display:inline-block;background:#2e7d32;color:#fff;border-radius:6px;padding:0 5px;font-size:12px;margin-left:4px}
 .items{flex:1;overflow-y:auto;padding:0 10px}
 .it{display:flex;align-items:center;gap:6px;padding:8px 4px;border-bottom:1px solid var(--line)}
 .it .n{flex:1;font-size:14px}
@@ -124,6 +127,7 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek'])n+=(a
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
+let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
 const $=s=>document.querySelector(s);
@@ -174,7 +178,9 @@ function saleView(){
    <div class="cats">${cats().map(c=>`<button class="${!keres&&c===kat?'on':''}" onclick="kat='${c}';keres='';saleView()">${c}</button>`).join('')}</div>
    <input class="search" placeholder="Keresés…" value="${keres}" oninput="keres=this.value;drawGrid()">
    <div class="grid" id="grid"></div></div>
-   <div class="cart"><h2>Kosár</h2><div class="items" id="items"></div>
+   <div class="cart"><h2>Kosár</h2>
+   <div class="mod"><button class="${helyben?'':'on'}" onclick="helyben=false;saleView()">Elvitel</button><button class="${helyben?'on':''}" onclick="helyben=true;saleView()">Helyben fogyasztás</button></div>
+   <div class="items" id="items"></div>
    <div class="sum"><span>Összesen</span><span id="tot"></span></div>
    <div class="pay"><button onclick="fizet('keszpenz')">Készpénz</button><button class="card" onclick="fizet('kartya')">Kártya</button>
    <button class="clr" onclick="kosar=[];drawCart()">Kosár ürítése</button></div></div></div>`;
@@ -193,14 +199,15 @@ function addItem(id){
   if(e){e.menny++;e.osszeg=e.menny*e.ar;}else kosar.push({id,nev:t.nev,egyseg:'db',menny:1,ar:t.ar,osszeg:t.ar});
   drawCart();}
 function chg(i,d){const k=kosar[i];if(k.egyseg==='g'){kosar.splice(i,1);}else{k.menny+=d;if(k.menny<=0)kosar.splice(i,1);else k.osszeg=k.menny*k.ar;}drawCart();}
+function tetelAfa(k){const t=TERMEKEK.find(x=>x.id===k.id)||{};return helyben&&t.helyben5?5:(t.afa||27);}
 function drawCart(){
-  $('#items').innerHTML=kosar.map((k,i)=>`<div class="it"><span class="n">${k.nev}<br><span class="muted">${k.menny} ${k.egyseg} · ${ft(k.osszeg)}</span></span>
+  $('#items').innerHTML=kosar.map((k,i)=>`<div class="it"><span class="n">${k.nev}${tetelAfa(k)===5?'<span class="afa5">5%</span>':''}<br><span class="muted">${k.menny} ${k.egyseg} · ${ft(k.osszeg)}</span></span>
    <button onclick="chg(${i},-1)">−</button>${k.egyseg==='db'?`<button onclick="chg(${i},1)">+</button>`:''}</div>`).join('')||'<p class="muted">Üres</p>';
   $('#tot').textContent=ft(kosar.reduce((s,k)=>s+k.osszeg,0));}
 async function fizet(mod){
   if(!kosar.length)return;
-  const rec={id:uid(),ido:nowISO(),dolgozo:user.nev,fizetes:mod,tetelek:kosar,osszeg:Math.round(kosar.reduce((s,k)=>s+k.osszeg,0)),szinkron:false};
-  await put('eladas',rec);kosar=[];drawCart();toast('Mentve: '+ft(rec.osszeg)+' · '+(mod==='kartya'?'kártya':'készpénz'));szinkron();}
+  const rec={id:uid(),ido:nowISO(),dolgozo:user.nev,fizetes:mod,helyben,tetelek:kosar.map(k=>({...k,afa:tetelAfa(k)})),osszeg:Math.round(kosar.reduce((s,k)=>s+k.osszeg,0)),szinkron:false};
+  await put('eladas',rec);kosar=[];helyben=false;saleView();toast('Mentve: '+ft(rec.osszeg)+' · '+(mod==='kartya'?'kártya':'készpénz'));szinkron();}
 
 // ---- sütés ---------------------------------------------------------------------
 async function bakeView(){
@@ -242,6 +249,7 @@ async function statView(){
   su.forEach(s=>{const h=H[hour(s.ido)]||(H[hour(s.ido)]={ft:0,db:0,vevo:0,sut:0});h.sut+=+s.db;});
   const max=Math.max(1,...Object.values(H).map(h=>h.ft));
   const D={};el.forEach(e=>{const d=D[e.dolgozo]||(D[e.dolgozo]={ft:0,vevo:0});d.ft+=e.osszeg;d.vevo++;});
+  const A={};el.forEach(e=>e.tetelek.forEach(t=>{const a=t.afa||'?';A[a]=(A[a]||0)+(+t.osszeg);}));
   const P={};el.forEach(e=>e.tetelek.forEach(t=>{const p=P[t.nev]||(P[t.nev]={menny:0,egyseg:t.egyseg,ft:0});p.menny+=t.menny;p.ft+=t.osszeg;}));
   $('#main').innerHTML=`<div class="panel">
    <div class="box" style="display:flex;gap:10px;align-items:center"><b>Nap:</b><input type="date" value="${statNap}" onchange="statNap=this.value;statView()" style="font-size:17px;padding:6px"><span class="muted">Forrás: ${forras}</span></div>
@@ -251,6 +259,8 @@ async function statView(){
     ${Object.entries(H).sort((a,b)=>a[0]-b[0]).map(([h,v])=>`<tr><td>${h}–${+h+1}</td><td>${ft(v.ft)}</td><td style="width:30%"><div class="bar" style="width:${v.ft/max*100}%"></div></td><td>${v.vevo}</td><td>${v.db}</td><td>${v.sut}</td></tr>`).join('')}</table></div>
    <div class="box"><h3>Dolgozónként</h3><table><tr><th>Dolgozó</th><th>Bevétel</th><th>Vevő</th><th>Átlagos kosár</th></tr>
     ${Object.entries(D).sort((a,b)=>b[1].ft-a[1].ft).map(([n,v])=>`<tr><td>${n}</td><td>${ft(v.ft)}</td><td>${v.vevo}</td><td>${ft(v.ft/v.vevo)}</td></tr>`).join('')||'<tr><td colspan=4 class="muted">Nincs adat</td></tr>'}</table></div>
+   <div class="box"><h3>ÁFA szerint (bruttó)</h3><table><tr><th>ÁFA</th><th>Bevétel</th><th>ebből ÁFA</th></tr>
+    ${Object.entries(A).sort((a,b)=>a[0]-b[0]).map(([a,v])=>`<tr><td>${a}${a==='?'?'':'%'}</td><td>${ft(v)}</td><td>${a==='?'?'–':ft(v*a/(100+ +a))}</td></tr>`).join('')||'<tr><td colspan=3 class="muted">Nincs adat</td></tr>'}</table></div>
    <div class="box"><h3>Termékenként</h3><table><tr><th>Termék</th><th>Mennyiség</th><th>Bevétel</th></tr>
     ${Object.entries(P).sort((a,b)=>b[1].ft-a[1].ft).map(([n,v])=>`<tr><td>${n}</td><td>${v.menny} ${v.egyseg}</td><td>${ft(v.ft)}</td></tr>`).join('')||'<tr><td colspan=3 class="muted">Nincs adat</td></tr>'}</table></div></div>`;}
 
@@ -265,7 +275,7 @@ function setView(){
 // ---- indulás ---------------------------------------------------------------------
 window.addEventListener('online',()=>{render();szinkron();});window.addEventListener('offline',render);
 async function termekekBetolt(){
-  try{const r=await sb('termekek?select=id,nev,rovid,kat,ar,egyseg,foto,sorrend,allergen,allergen_forras&order=sorrend');if(r.ok){const d=await r.json();if(d.length){localStorage.setItem('termekek',JSON.stringify(d));return d;}}}catch(e){}
+  try{const r=await sb('termekek?select=id,nev,rovid,kat,ar,egyseg,foto,sorrend,allergen,allergen_forras,afa,helyben5&order=sorrend');if(r.ok){const d=await r.json();if(d.length){localStorage.setItem('termekek',JSON.stringify(d));return d;}}}catch(e){}
   try{const c=localStorage.getItem('termekek');if(c)return JSON.parse(c);}catch(e){}
   return await (await fetch('termekek.json')).json();}
 (async()=>{await openDB();TERMEKEK=await termekekBetolt();szinkron();
