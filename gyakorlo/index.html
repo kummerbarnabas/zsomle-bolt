@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<base href="../">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Zsömle gyakorló">
+<link rel="manifest" href="gyakorlo/manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Zsömle GYAKORLÓ</title>
+<style>
+:root{--bg:#f6f3ee;--card:#fff;--ink:#2b2118;--muted:#7a6d60;--brand:#1f5f8b;--ok:#2f7d32;--warn:#b3261e;--line:#e4ddd3}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);height:100vh;height:100dvh;overflow:hidden}
+button{font:inherit;border:0;border-radius:12px;cursor:pointer}
+.top{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--brand);color:#fff}
+.top h1{font-size:20px;margin:0 12px 0 0}
+.top .tab{background:rgba(255,255,255,.15);color:#fff;padding:10px 16px}
+.top .tab.on{background:#fff;color:var(--brand);font-weight:600}
+.top .sp{flex:1}
+.top .who{font-size:15px;opacity:.9}
+.net{font-size:13px;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,.2)}
+.net:empty{display:none}
+main{height:calc(100vh - 62px);height:calc(100dvh - 62px);overflow:hidden}
+.sale{display:grid;grid-template-columns:1fr 340px;height:100%}
+.left{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.cats{display:flex;gap:6px;padding:10px;overflow-x:auto;flex:none}
+.cats button{background:var(--card);padding:10px 14px;white-space:nowrap;border:1px solid var(--line)}
+.cats button.on{background:var(--ink);color:#fff}
+.search{margin:0 10px 8px;padding:12px;border-radius:12px;border:1px solid var(--line);font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:0 10px calc(60px + env(safe-area-inset-bottom));overflow-y:auto;flex:1;min-height:0;align-content:start;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.p{background:var(--card);border:1px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:4px;text-align:center}
+.p .kep{width:100%;aspect-ratio:4/3;border-radius:8px;background:#efe7dc center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#b9a892;font-size:26px;font-weight:700}
+.p .n{font-size:14px;line-height:1.2;min-height:34px}
+.p .a{font-weight:700;color:var(--brand)}
+.p .db{font-size:30px;font-weight:700;color:var(--brand);line-height:1}.p .mi{position:absolute;top:6px;left:6px;padding:2px 8px;border-radius:12px;background:#eee;font-size:13px;color:#555}
+.lcs{padding:8px 12px 2px;font-weight:700;color:#8B5A2B}
+.p .lk{display:block;width:100%;height:64px;border-radius:6px}.p.kis{min-height:100px}.p .ora{position:absolute;top:6px;right:6px;padding:2px 8px;border-radius:12px;background:#2e7d32;color:#fff;font-size:14px;font-weight:700}
+.p{position:relative}
+.p .al{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:13px;background:#c0392b;color:#fff;font-size:13px;font-weight:700;line-height:26px}
+.aldlg{background:#fff;border-radius:12px;padding:18px;max-width:420px;font-size:16px;line-height:1.4}
+.p.kis{padding:10px;min-height:70px;justify-content:center}
+.cart{background:var(--card);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.cart h2{margin:12px 14px 6px;font-size:18px}
+.mod{display:flex;gap:6px;margin:0 14px 8px}.mod button{flex:1;padding:12px;font-size:17px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.mod button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.afa5{display:inline-block;background:#2e7d32;color:#fff;border-radius:6px;padding:0 5px;font-size:12px;margin-left:4px}
+.items{flex:1;overflow-y:auto;padding:0 10px 40px;min-height:0;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.it{display:flex;align-items:center;gap:6px;padding:8px 4px;border-bottom:1px solid var(--line)}
+.it .n{flex:1;font-size:14px}
+.it button{width:36px;height:36px;background:var(--bg);font-size:20px}
+.it button.jv{width:auto;padding:0 12px;font-size:15px;flex:none}
+.sum{padding:12px 14px;font-size:26px;font-weight:700;display:flex;justify-content:space-between}
+.pay{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 10px 12px}
+.pay button{padding:20px 0;font-size:19px;color:#fff;background:var(--ok)}
+.pay button.card{background:#1f5fa8}
+.pay .clr{grid-column:1/3;background:var(--bg);color:var(--ink);padding:12px}
+.panel{padding:16px 16px 60px;overflow-y:auto;height:100%;box-sizing:border-box;-webkit-overflow-scrolling:touch}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.kpi b{display:block;font-size:24px;margin-top:4px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:9}
+.dlg{background:var(--card);border-radius:18px;padding:20px;width:360px;max-width:94vw}
+.dlg h3{margin:0 0 10px}
+.dlg input{width:100%;font-size:28px;padding:10px;border:1px solid var(--line);border-radius:10px;text-align:center}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.keys button{padding:16px 0;font-size:22px;background:var(--bg)}
+.row{display:flex;gap:8px;margin-top:12px}.row button{flex:1;padding:14px}
+.prim{background:var(--brand);color:#fff}
+.login{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px}
+.login .names{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:700px}
+.login .names button{background:var(--card);border:1px solid var(--line);padding:18px 26px;font-size:19px}
+.muted{color:var(--muted);font-size:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;z-index:10}
+.bar{height:10px;background:var(--brand);border-radius:5px}
+.sw{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+/* Telefon (keskeny képernyő): a kosár alulra kerül, a fülek sorba törnek (2026-10-18) */
+@media (max-width:820px){
+ #app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+ main{flex:1;height:auto;min-height:0}
+ .top{flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:8px 10px;flex:none}.top h1{display:none}.top .tab{flex:none;white-space:nowrap}.top .tab{padding:8px 11px;font-size:14px}.top .net,.top .who{display:none}.top .sp{display:none}
+ .sale{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 38dvh}
+ .cart{border-left:0;border-top:2px solid var(--line)}
+ .grid{grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:6px;padding:0 8px 40px}
+ .p .n{font-size:12px;min-height:30px}.p .a{font-size:13px}.cats{padding:8px}.search{margin:0 8px 6px}
+ .p .db{font-size:24px}.p .lk{height:48px}
+ .panel{padding:10px 10px 60px}.box table{font-size:14px}
+}
+.gyb{position:fixed;left:0;right:0;bottom:0;height:24px;line-height:24px;background:#1f5f8b;color:#fff;text-align:center;font-size:12px;z-index:30}.gyb a{color:#ffd54f;font-weight:700;margin-left:6px}
+body{height:calc(100vh - 24px);height:calc(100dvh - 24px)}main{height:calc(100vh - 86px);height:calc(100dvh - 86px)}.login{height:calc(100dvh - 24px)}
+@media (max-width:820px){#app{height:calc(100vh - 24px);height:calc(100dvh - 24px)}main{height:auto}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ---- beállítások -------------------------------------------------------------
+// Supabase: a publishable kulcs nyilvános, a böngészőbe való; csak a termékek olvasását és a
+// bekuld() függvényt engedi (a jogokat lásd db/001_alap.sql, db/002_bekuldes.sql).
+const GYAKORLO=true;
+const LSG={getItem:k=>localStorage.getItem('gy_'+k),setItem:(k,v)=>localStorage.setItem('gy_'+k,v),removeItem:k=>localStorage.removeItem('gy_'+k)};
+const SB_URL='https://gyakorlo.invalid', SB_KEY='nincs';
+const sb=(path,opt={})=>fetch(SB_URL+'/rest/v1/'+path,{...opt,headers:{apikey:SB_KEY,'Content-Type':'application/json',...(opt.headers||{})}});
+// Dolgozók (a tulajdonos megadása, 2026-10-16; 2026-10-17 óta 4 jegyű PIN, mindenkinek 1234 – a tulajdonos döntése). A PIN-ek helyett csak SHA-256('zsomle:'+PIN)
+// lenyomat szerepel, mert a kód nyilvános tárhelyen van. Új dolgozó: lenyomat a README szerint.
+const DOLGOZOK = [
+  {nev:'Marcsi',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'},
+  {nev:'Niki',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'},
+  {nev:'Ildi',h:'34f4af72eabb80ec313d893949cf1efbd11c8f6c81ac698567929b7de1805385'}];
+const TULAJ_H = 'a623a76850b821af97cc29e48e64916730601a751285edd0bb773991ea4d7c83';
+// Dolgozói fülek (a tulajdonos döntése, 2026-10-17): eladás, sütés, maradék, pénzmozgás; a statisztika és a beállítások csak a tulajdonosé.
+// Az eladás bekapcsolásához ide kell felvenni az 'elad' fület.
+const DOLGOZOI_FULEK = ['elad','lap','sut','kif','mar','penz'];
+let tulajJelszo = null; // csak a memóriában, a szerveres statisztikához
+async function lenyomat(pin){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('zsomle:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+// Külső kapcsolatok: kiépítve, de a felhasználó döntése szerint (2026-10-16) kikapcsolva.
+const KAPCSOLATOK = {weboldal:false, google:false, facebook:false};
+const NYITVA = {1:[5,18],2:[5,18],3:[5,18],4:[5,18],5:[5,18],6:[6,12]}; // hétfő=1
+
+// ---- tárolás: IndexedDB, internet nélkül is ------------------------------------
+let db;
+function openDB(){return new Promise((ok,err)=>{const r=indexedDB.open('zsomle-gyakorlo',4);
+  r.onupgradeneeded=()=>{const d=r.result;for(const s of ['eladas','sutes','maradek','penz','vonal','kifogy'])if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'});};
+  r.onsuccess=()=>{db=r.result;ok()};r.onerror=err;});}
+function put(store,obj){return new Promise(ok=>{const t=db.transaction(store,'readwrite');t.objectStore(store).put(obj);t.oncomplete=ok;});}
+function putMany(store,arr){return new Promise(ok=>{const t=db.transaction(store,'readwrite');const s=t.objectStore(store);arr.forEach(o=>s.put(o));t.oncomplete=ok;});}
+function all(store){return new Promise(ok=>{const q=db.transaction(store).objectStore(store).getAll();q.onsuccess=()=>ok(q.result);});}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const nowISO=()=>new Date().toISOString();
+const napja=iso=>{const d=new Date(iso);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const ma=()=>napja(new Date().toISOString());
+// Szinkron: minden rekord szinkron:false-szal indul; a Supabase-kapcsolat (később) ezeket küldi fel.
+let szinkronFut=false, varakozik=0;
+async function szinkron(){
+  if(GYAKORLO||szinkronFut||!navigator.onLine)return;szinkronFut=true;
+  try{const L={};for(const s of ['eladas','sutes','maradek','penz','vonal','kifogy'])L[s]=(await all(s)).filter(r=>!r.szinkron&&!r.demo);
+    const n=L.eladas.length+L.sutes.length+L.maradek.length+L.penz.length+L.vonal.length+L.kifogy.length;
+    if(n){const r=await fetch(SB_URL+'/rest/v1/rpc/bekuld',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({p_eladas:L.eladas,p_sutes:L.sutes,p_maradek:L.maradek,p_penz:L.penz,p_vonal:L.vonal,p_kifogy:L.kifogy})});
+      if(r.ok){for(const s in L)await putMany(s,L[s].map(x=>({...x,szinkron:true})));}}
+  }catch(e){}finally{szinkronFut=false;varakozik=await fuggo();const e=document.getElementById('fuggo');if(e)e.textContent=varakozik?varakozik+' felküldésre vár':'';}}
+async function fuggo(){if(GYAKORLO)return 0;let n=0;for(const s of ['eladas','sutes','maradek','penz','vonal','kifogy'])n+=(await all(s)).filter(r=>!r.szinkron&&!r.demo).length;return n;}
+setInterval(szinkron,60000);
+
+// ---- állapot -------------------------------------------------------------------
+const VALTOZAT='27'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
+let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
+const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
+const $=s=>document.querySelector(s);
+function alDlg(id){const t=TERMEKEK.find(x=>x.id===id);const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="aldlg"><b>${t.rovid||t.nev}</b><br><br><b>Allergének:</b> ${t.allergen}<br><br><span class="muted">Forrás: ${t.allergen_forras||''}</span></div>`;
+  m.onclick=()=>m.remove();document.body.appendChild(m);}
+async function frissit(){if(GYAKORLO){location.replace(location.pathname+'?v='+Date.now());return;}toast('Frissítés…');try{await szinkron();}catch(e){}
+  try{const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.unregister();const ks=await caches.keys();for(const k of ks)await caches.delete(k);}catch(e){}
+  location.replace(location.pathname+'?v='+Date.now());}
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),1800);}
+
+// ---- belépés -------------------------------------------------------------------
+function loginView(){
+  $('#app').innerHTML=`<div class="login"><h1>Zsömle — GYAKORLÓ</h1><div class="muted">Válaszd ki a neved</div>
+  <div class="names">${DOLGOZOK.map((d,i)=>`<button onclick="pinDlg(${i})">${d.nev}</button>`).join('')}
+  <button onclick="pinDlg(-1)">Tulajdonos</button></div>
+  <p class="muted" style="text-align:center;margin-top:24px">Változat: v${VALTOZAT} · <a href="#" onclick="frissit();return false">frissítés</a></p></div>`;}
+function pinDlg(i){
+  numDlg(i<0?'Tulajdonosi jelszó':DOLGOZOK[i].nev+' – PIN', '', async v=>{
+    const h=await lenyomat(v);
+    if(i<0? h===TULAJ_H : h===DOLGOZOK[i].h){user=i<0?{nev:'Tulajdonos',tulaj:true}:{nev:DOLGOZOK[i].nev};if(i<0)tulajJelszo=v;tab=user.tulaj?'stat':DOLGOZOI_FULEK[0];render();}
+    else toast('Hibás PIN');}, true, '', i<0?0:4);}
+
+// ---- számbillentyűzet ------------------------------------------------------------
+function numDlg(title,init,done,pw,unit,maxlen){
+  const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="dlg"><h3>${title}</h3><input id="nv" ${pw?'type="password"':''} value="${init}" readonly>
+  ${unit?`<div class="muted" style="text-align:center;margin-top:4px">${unit}</div>`:''}
+  <div class="keys">${[1,2,3,4,5,6,7,8,9,'C',0,'⌫'].map(k=>`<button data-k="${k}">${k}</button>`).join('')}</div>
+  <div class="row"><button data-k="x">Mégse</button><button class="prim" data-k="ok">OK</button></div></div>`;
+  document.body.appendChild(m);const inp=m.querySelector('#nv');
+  m.onclick=e=>{const k=e.target.dataset.k;if(k===undefined)return;
+    if(k==='x')m.remove();else if(k==='ok'){m.remove();done(inp.value);}
+    else if(k==='C')inp.value='';else if(k==='⌫')inp.value=inp.value.slice(0,-1);else{inp.value+=k;if(maxlen&&inp.value.length>=maxlen){m.remove();done(inp.value);}}};}
+
+// ---- fő nézet ------------------------------------------------------------------
+function render(){
+  if(!user)return loginView();
+  let tabs=[['elad','Eladás'],['lap','Napi lap'],['sut','Sütés'],['kif','Elfogyott'],['mar','Maradék / selejt'],['penz','Pénz'],['stat','Statisztika']];
+  if(!user.tulaj){tabs=tabs.filter(([k])=>DOLGOZOI_FULEK.includes(k));if(!DOLGOZOI_FULEK.includes(tab))tab=DOLGOZOI_FULEK[0];}
+  if(user.tulaj)tabs.push(['beall','Beállítások']);
+  $('#app').innerHTML=`<div class="top"><h1>Zsömle gyakorló</h1>${tabs.map(([k,n])=>`<button class="tab ${tab===k?'on':''}" onclick="tab='${k}';render()">${n}</button>`).join('')}
+  <span class="sp"></span><span class="net" id="fuggo">${varakozik?varakozik+' felküldésre vár':''}</span><span class="net">${navigator.onLine?'online':'offline – helyben mentve'}</span>
+  <span class="who">${user.nev}</span><button class="tab" title="Új változat betöltése" onclick="frissit()">v${VALTOZAT} ↻</button><button class="tab" onclick="user=null;tulajJelszo=null;kosar=[];render()">Kilépés</button></div><main id="main"></main>`;
+  ({elad:saleView,lap:lapView,sut:bakeView,kif:kifView,mar:leftView,penz:penzView,stat:statView,beall:setView})[tab]();}
+
+// ---- eladás --------------------------------------------------------------------
+// Keresés: kis- és nagybetű, valamint ékezet nélkül is talál (pl. „pogacsa”).
+const nrm=x=>(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const talal=(t,q)=>nrm(t.nev+' '+(t.rovid||'')).includes(nrm(q));
+let sutKeres='', marKeres='';
+function cats(){return [...new Set([...TERMEKEK].sort((a,b)=>a.sorrend-b.sorrend).map(t=>t.kat))];}
+function saleView(){
+  const list=TERMEKEK.filter(t=>keres?talal(t,keres):t.kat===kat);
+  $('#main').innerHTML=`<div class="sale"><div class="left">
+   <div class="cats">${cats().map(c=>`<button class="${!keres&&c===kat?'on':''}" onclick="kat='${c}';keres='';saleView()">${c}</button>`).join('')}</div>
+   <input class="search" placeholder="Keresés…" value="${keres}" oninput="keres=this.value;drawGrid()">
+   <div class="grid" id="grid"></div></div>
+   <div class="cart"><h2>Kosár</h2>
+   <div class="mod"><button class="${helyben?'':'on'}" onclick="helyben=false;saleView()">Elvitel</button><button class="${helyben?'on':''}" onclick="helyben=true;saleView()">Helyben fogyasztás</button></div>
+   <div class="items" id="items"></div>
+   <div class="sum"><span>Összesen</span><span id="tot"></span></div>
+   <div class="pay"><button onclick="fizet('keszpenz')">Készpénz</button><button class="card" onclick="fizet('kartya')">Kártya</button>
+   <button class="clr" onclick="kosar=[];drawCart()">Kosár ürítése</button></div></div></div>`;
+  drawGrid();drawCart();}
+function drawGrid(){
+  const list=TERMEKEK.filter(t=>keres?talal(t,keres):t.kat===kat);
+  $('#grid').innerHTML=list.map(t=>csempe(t,`addItem(${t.id})`,true)).join('');}
+// Csempe: felül a kép (a felhasználó készíti; addig helykitöltő), alatta a név és az ár.
+function csempe(t,onclick,arral){const src=t.foto&&(/^https?:/.test(t.foto)?t.foto:'foto/'+t.foto);const kep=src?`style="background:#fff url('${src}') center/contain no-repeat"`:'';
+  return `<button class="p" onclick="${onclick}"><span class="kep" ${kep}>${t.foto?'':(t.rovid||t.nev).slice(0,1)}</span>
+   ${t.allergen?`<span class="al" onclick="event.stopPropagation();alDlg(${t.id})">A</span>`:''}<span class="n">${t.rovid||t.nev}</span>${arral?`<span class="a">${ft(t.ar)}${t.egyseg==='kg'?'/kg':''}</span>`:''}</button>`;}
+function addItem(id){
+  const t=TERMEKEK.find(x=>x.id===id);
+  if(t.egyseg==='kg') return numDlg(t.nev,'',v=>{const g=+v;if(g>0){kosar.push({id,nev:t.nev,egyseg:'g',menny:g,ar:t.ar,osszeg:t.ar*g/1000});drawCart();}},false,'gramm (a mérlegről)');
+  const e=kosar.find(k=>k.id===id&&k.egyseg==='db');
+  if(e){e.menny++;e.osszeg=e.menny*e.ar;}else kosar.push({id,nev:t.nev,egyseg:'db',menny:1,ar:t.ar,osszeg:t.ar});
+  drawCart();}
+function chg(i,d){const k=kosar[i];if(k.egyseg==='g'){kosar.splice(i,1);}else{k.menny+=d;if(k.menny<=0)kosar.splice(i,1);else k.osszeg=k.menny*k.ar;}drawCart();}
+function tetelAfa(k){const t=TERMEKEK.find(x=>x.id===k.id)||{};return helyben&&t.helyben5?5:(t.afa||27);}
+function drawCart(){
+  $('#items').innerHTML=kosar.map((k,i)=>`<div class="it"><span class="n">${k.nev}${tetelAfa(k)===5?'<span class="afa5">5%</span>':''}<br><span class="muted">${k.menny} ${k.egyseg} · ${ft(k.osszeg)}</span></span>
+   <button onclick="chg(${i},-1)">−</button>${k.egyseg==='db'?`<button onclick="chg(${i},1)">+</button>`:''}</div>`).join('')||'<p class="muted">Üres</p>';
+  $('#tot').textContent=ft(kosar.reduce((s,k)=>s+k.osszeg,0));}
+async function fizet(mod){
+  if(!kosar.length)return;
+  const rec={id:uid(),ido:nowISO(),dolgozo:user.nev,fizetes:mod,helyben,tetelek:kosar.map(k=>({...k,afa:tetelAfa(k)})),osszeg:Math.round(kosar.reduce((s,k)=>s+k.osszeg,0)),szinkron:false};
+  await put('eladas',rec);kosar=[];helyben=false;saleView();toast('Mentve: '+ft(rec.osszeg)+' · '+(mod==='kartya'?'kártya':'készpénz'));szinkron();}
+
+// ---- sütés ---------------------------------------------------------------------
+async function bakeView(){
+  const today=(await all('sutes')).filter(s=>napja(s.ido)===ma()).sort((a,b)=>b.ido.localeCompare(a.ido));
+  const forn=TERMEKEK.filter(t=>t.kat==='Fornetti');
+  $('#main').innerHTML=`<div class="sale"><div class="left"><div class="muted" style="padding:10px">Koppints a termékre, és írd be, hány darabot sütöttél. Az időpont magától mentődik.</div>
+   <input class="search" placeholder="Keresés…" value="${sutKeres}" oninput="sutKeres=this.value;sutGrid()">
+   <div class="grid" id="sgrid"></div></div>
+   <div class="cart"><h2>Mai sütések</h2><div class="items">${today.map(s=>`<div class="it"${+s.db===0?' style="opacity:.5"':''}><span class="n">${s.nev}<br><span class="muted">${new Date(s.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${+s.db===0?'törölve':s.db+' db'} · ${s.dolgozo}${s.javitva?` · javítva (eredetileg ${s.eredeti_db} db, ${s.javito})`:''}</span></span><button class="jv" onclick="sutJavit('${s.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;sutGrid();}
+// Sütés javítása (2026-10-17): helyes darabszám; 0 = törlés. Az eredeti érték és a javító megmarad.
+async function sutJavit(rid){const s=(await all('sutes')).find(x=>x.id===rid);if(!s)return;
+  numDlg(s.nev+' – eddig '+s.db+' db; helyes szám (0 = törlés)','',async v=>{if(v===''||isNaN(+v))return;const n=+v;if(n===+s.db)return;
+    await put('sutes',{...s,db:n,eredeti_db:s.eredeti_db??s.db,javitva:nowISO(),javito:user.nev,szinkron:false});
+    toast(n===0?'Sütés törölve':'Javítva: '+n+' db');bakeView();szinkron();},false,'darab');}
+function sutGrid(){const l=TERMEKEK.filter(t=>t.kat==='Fornetti'&&(!sutKeres||talal(t,sutKeres)));
+  $('#sgrid').innerHTML=l.map(t=>csempe(t,`sut(${t.id})`,false)).join('')||'<p class="muted" style="padding:10px">Nincs találat</p>';}
+function sut(id){const t=TERMEKEK.find(x=>x.id===id);numDlg(t.nev+' – sütés','',async v=>{const n=+v;if(n>0){await put('sutes',{id:uid(),ido:nowISO(),termek_id:id,nev:t.nev,db:n,dolgozo:user.nev,szinkron:false});toast(n+' db mentve');bakeView();}},false,'darab');}
+
+// ---- maradék és selejt ----------------------------------------------------------
+let marTipus='maradek', marKat='Kenyerek';
+async function leftView(){
+  const kats=['Kenyerek','Péksütemények','Sütemények','Fornetti','Hot dog és hamburger','Szendvicsek'];
+  const today=(await all('maradek')).filter(s=>napja(s.ido)===ma());
+  $('#main').innerHTML=`<div class="sale"><div class="left">
+   <div class="cats"><button class="${marTipus==='maradek'?'on':''}" onclick="marTipus='maradek';leftView()">Esti maradék</button>
+   <button class="${marTipus==='selejt'?'on':''}" onclick="marTipus='selejt';leftView()">Selejt (kidobva)</button>
+   <span style="width:16px"></span>${kats.map(c=>`<button class="${c===marKat?'on':''}" onclick="marKat='${c}';leftView()">${c}</button>`).join('')}</div>
+   <input class="search" placeholder="Keresés (minden kategóriában)…" value="${marKeres}" oninput="marKeres=this.value;marGrid()">
+   <div class="grid" id="mgrid"></div></div>
+   <div class="cart"><h2>Mai rögzítés</h2><div class="items">${today.map(s=>`<div class="it"${+s.menny===0&&s.javitva?' style="opacity:.5"':''}><span class="n">${s.nev}<br><span class="muted">${s.tipus==='selejt'?'selejt':'maradék'} · ${+s.menny===0&&s.javitva?'törölve':s.menny+' '+s.egyseg} · ${s.dolgozo}${s.javitva?` · javítva (eredetileg ${s.eredeti_menny} ${s.egyseg}, ${s.javito})`:''}</span></span><button class="jv" onclick="marJavit('${s.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;marGrid();}
+// Maradék / selejt javítása (2026-10-17): helyes mennyiség; 0 = törlés. Az eredeti érték és a javító megmarad.
+async function marJavit(rid){const s=(await all('maradek')).find(x=>x.id===rid);if(!s)return;
+  numDlg(s.nev+' – eddig '+s.menny+' '+s.egyseg+'; helyes szám (0 = törlés)','',async v=>{if(v===''||isNaN(+v))return;const n=+v;if(n===+s.menny)return;
+    await put('maradek',{...s,menny:n,eredeti_menny:s.eredeti_menny??s.menny,javitva:nowISO(),javito:user.nev,szinkron:false});
+    toast(n===0?'Törölve':'Javítva: '+n+' '+s.egyseg);leftView();szinkron();},false,s.egyseg);}
+const MAR_KATS=['Kenyerek','Péksütemények','Sütemények','Fornetti','Hot dog és hamburger','Szendvicsek'];
+function marGrid(){const l=TERMEKEK.filter(t=>marKeres?MAR_KATS.includes(t.kat)&&talal(t,marKeres):t.kat===marKat);
+  $('#mgrid').innerHTML=l.map(t=>csempe(t,`mar(${t.id})`,false)).join('')||'<p class="muted" style="padding:10px">Nincs találat</p>';}
+function mar(id){const t=TERMEKEK.find(x=>x.id===id);const eg=t.egyseg==='kg'?'db':'db';
+  numDlg(t.nev+' – '+(marTipus==='selejt'?'selejt':'maradék'),'',async v=>{const n=+v;if(v!==''){await put('maradek',{id:uid(),ido:nowISO(),termek_id:id,nev:t.nev,tipus:marTipus,menny:n,egyseg:eg,dolgozo:user.nev,szinkron:false});toast('Mentve');leftView();}},false,'darab');}
+
+// ---- napi eladás lap (2026-10-18): a papíros hot dog / hamburger / szendvics / Foodora / Munch / kávé lap a tableten ----
+let FAJTAK=[],KIFOGY=[];
+const FAJTA_KEP={'Foodora rendelés':'logo-foodora.png','Munch csomag':'logo-munch.png'};
+function kepSrc(foto){return foto?(/^https?:/.test(foto)?foto:'foto/'+foto):'';}
+function fajtaKep(f){if(FAJTA_KEP[f])return FAJTA_KEP[f];const t=TERMEKEK.find(x=>x.nev===f);return t&&t.foto?kepSrc(t.foto):'';}
+async function jsonBetolt(fn){try{const r=await fetch(fn,{cache:'no-store'});if(r.ok){const d=await r.json();try{LSG.setItem(fn,JSON.stringify(d));}catch(e){}return d;}}catch(e){}
+  try{return JSON.parse(LSG.getItem(fn)||'[]');}catch(e){return [];}}
+async function fajtakBetolt(){try{const r=await fetch('fajtak.json',{cache:'no-store'});if(r.ok){const d=await r.json();try{LSG.setItem('fajtak',JSON.stringify(d));}catch(e){}return d;}}catch(e){}
+  try{return JSON.parse(LSG.getItem('fajtak')||'[]');}catch(e){return [];}}
+async function lapAdat(){const V=(await all('vonal')).filter(x=>napja(x.ido)===ma()).sort((a,b)=>a.ido.localeCompare(b.ido));
+  const E={},M={},O={};V.forEach(x=>{if(x.tipus==='eladva')E[x.fajta]=(E[x.fajta]||0)+(+x.ertek);else if(x.tipus==='maradt')M[x.fajta]=+x.ertek;else if(x.tipus==='osszeg')O[x.fajta]=+x.ertek;});return {E,M,O};}
+async function vonal(fajta,d){const {E}=await lapAdat();if(d<0&&!(E[fajta]>0))return;
+  await put('vonal',{id:uid(),ido:nowISO(),dolgozo:user.nev,fajta,tipus:'eladva',ertek:d,szinkron:false});
+  toast(fajta+(d>0?' +1':' −1')+' (ma: '+((E[fajta]||0)+d)+')');lapView();szinkron();}
+async function lapSzam(fajta,tipus){const {M,O}=await lapAdat();const eddig=tipus==='maradt'?M[fajta]:O[fajta];
+  numDlg(fajta+' – '+(tipus==='maradt'?'maradt vagy kidobva (db)':'napi összeg (Ft)')+(eddig!=null?' · eddig: '+eddig:''),'',async v=>{if(v===''||isNaN(+v))return;
+    await put('vonal',{id:uid(),ido:nowISO(),dolgozo:user.nev,fajta,tipus,ertek:+v,szinkron:false});toast('Mentve');lapView();szinkron();},false,tipus==='maradt'?'darab':'Ft');}
+async function lapView(){const {E,M,O}=await lapAdat();const q=(s)=>s.replace(/'/g,"\\'");
+  $('#main').innerHTML=`<div class="sale"><div class="left" style="overflow-y:auto">
+   <div class="muted" style="padding:10px">Minden eladásnál koppints a fajtára (egy koppintás = egy darab, a Foodora-rendelés termékeit is). Tévedésnél a „−1”. Este írd be, ami maradt vagy kidobásra került, és a Foodora / Munch napi összegét.</div>
+   ${FAJTAK.map(g=>`<div class="lcs">${g.nev}</div><div class="grid" style="flex:none;padding-bottom:6px">${g.fajtak.map(f=>`<button class="p kis" onclick="vonal('${q(f)}',1)"><span class="mi" onclick="event.stopPropagation();vonal('${q(f)}',-1)">−1</span>${fajtaKep(f)?`<span class="lk" style="background:#fff url('${fajtaKep(f)}') center/contain no-repeat"></span>`:''}<span class="db">${E[f]||0}</span><span class="n">${f}</span></button>`).join('')}</div>`).join('')||'<p class="muted" style="padding:10px">A fajták listája nem töltődött be – frissíts (↻).</p>'}
+   </div><div class="cart"><h2>Este beírandó</h2><div class="items">
+   ${FAJTAK.filter(g=>g.maradek||g.osszeg).map(g=>`<div class="lcs">${g.nev}</div>`+g.fajtak.map(f=>`<div class="it"><span class="n">${f}<br><span class="muted">eladva ${E[f]||0} db${g.maradek?' · maradt/kidobva: '+(M[f]!=null?M[f]+' db':'–'):''}${g.osszeg?' · összeg: '+(O[f]!=null?ft(O[f]):'–'):''}</span></span>
+     <button class="jv" onclick="lapSzam('${q(f)}','${g.osszeg?'osszeg':'maradt'}')">${g.osszeg?'Összeg':'Maradt'}</button></div>`).join('')).join('')}
+   </div></div></div>`;}
+
+// ---- „Mikor fogyott el?” (a heti papírlap helyett, 2026-10-18) ----------------------------------------------
+async function kifAdat(){const m={};(await all('kifogy')).filter(x=>napja(x.ido)===ma()).forEach(x=>{m[x.termek]=x;});return m;}
+function oraDlg(cim,elo,torolheto,done){const m=document.createElement('div');m.className='modal';const d=new Date();const most=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  m.innerHTML=`<div class="dlg"><h3>${cim}</h3><p class="muted" style="margin:0 0 8px">Hánykor fogyott el az utolsó darab?</p>
+   <input id="ti" type="time" value="${elo||most}" style="font-size:34px;padding:10px;width:100%;box-sizing:border-box;text-align:center">
+   <div class="row"><button data-k="x">Mégse</button>${torolheto?'<button data-k="del">Törlés</button>':''}<button class="prim" data-k="ok">Mentés</button></div></div>`;
+  document.body.appendChild(m);m.onclick=e=>{const k=e.target.dataset.k;if(!k)return;const v=m.querySelector('#ti').value;m.remove();if(k==='ok'&&v)done(v);else if(k==='del')done('');};}
+async function kifMent(termek,ora){const M=await kifAdat();const e=M[termek];
+  if(e){await put('kifogy',{...e,ora,eredeti_ora:e.eredeti_ora??e.ora,javitva:nowISO(),javito:user.nev,szinkron:false});}
+  else{await put('kifogy',{id:uid(),ido:nowISO(),dolgozo:user.nev,termek,ora,szinkron:false});}
+  toast(ora?'Mentve: '+ora:'Törölve');kifView();szinkron();}
+async function kifKoppint(i){const k=KIFOGY[i];const e=(await kifAdat())[k.termek];const mar=e&&e.ora;
+  oraDlg(k.lap,mar?e.ora:'',!!mar,v=>kifMent(k.termek,v));}
+let kifKeres='';
+async function kifView(){const M=await kifAdat();const lista=Object.values(M).filter(x=>x.ora).sort((a,b)=>a.ora.localeCompare(b.ora));
+  $('#main').innerHTML=`<div class="sale"><div class="left">
+   <div class="muted" style="padding:10px 10px 0">Amikor egy termékből az utolsó darab is elfogyott, koppints rá, és mentsd az időpontot (alapból a mostani idő). Ami zárásig megmaradt, azt ne érintsd.</div>
+   <input class="search" placeholder="Keresés…" value="${kifKeres}" oninput="kifKeres=this.value;kifGrid()">
+   <div class="grid" id="kgrid"></div></div>
+   <div class="cart"><h2>Mai kifogyások</h2><div class="items">${lista.map(x=>{const k=KIFOGY.find(y=>y.termek===x.termek)||{lap:x.termek};return `<div class="it"><span class="n">${k.lap}<br><span class="muted">${x.ora} · ${x.dolgozo}${x.javitva?' · javítva':''}</span></span><button class="jv" onclick="kifKoppint(${KIFOGY.indexOf(k)})">Javít</button></div>`;}).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;kifGrid();}
+async function kifGrid(){const M=await kifAdat();let h='',cs='';
+  KIFOGY.forEach((k,i)=>{if(kifKeres&&!nrm(k.lap+' '+k.termek).includes(nrm(kifKeres)))return;if(k.besz!==cs){cs=k.besz;h+=`<div class="lcs" style="grid-column:1/-1;padding:4px 2px 0">${cs}</div>`;}
+    const t=TERMEKEK.find(x=>x.nev===k.termek);const src=t&&t.foto?kepSrc(t.foto):'';const e=M[k.termek];
+    h+=`<button class="p" onclick="kifKoppint(${i})" style="position:relative">${e&&e.ora?`<span class="ora">${e.ora}</span>`:''}<span class="kep" ${src?`style="background:#fff url('${src}') center/contain no-repeat"`:''}>${src?'':k.lap.slice(0,1)}</span><span class="n">${k.lap}</span></button>`;});
+  const g=$('#kgrid');if(g)g.innerHTML=h||'<p class="muted" style="padding:10px">Nincs találat</p>';}
+
+// ---- gyakorló változat: mintaadat és újrakezdés ----
+async function gySeed(){if(LSG.getItem('seed'))return;const y=new Date(Date.now()-86400000);y.setHours(18,5,0,0);
+  await put('penz',{id:'minta-zaro',ido:y.toISOString(),dolgozo:'Marcsi',tipus:'zaro',osszeg:17215,cimletek:{1000:5,500:6,fiok:2300},megjegyzes:'minta (tegnapi zárás)',szinkron:true,demo:true});LSG.setItem('seed','1');}
+function gyReset(){if(!confirm('Újrakezded a gyakorlást? A gyakorló adatok törlődnek (az éles adatokhoz ez nem nyúl).'))return;
+  try{db.close();}catch(e){}Object.keys(localStorage).filter(k=>k.startsWith('gy_')).forEach(k=>localStorage.removeItem(k));
+  const q=indexedDB.deleteDatabase('zsomle-gyakorlo');q.onsuccess=q.onerror=q.onblocked=()=>location.replace(location.pathname+'?v='+Date.now());}
+document.addEventListener('DOMContentLoaded',()=>document.body.insertAdjacentHTML('beforeend','<div class="gyb">GYAKORLÓ · semmi nem kerül az éles adatok közé · <a href="#" onclick="gyReset();return false">Újrakezdés</a></div>'));
+
+// ---- pénzmozgás (a tulajdonos kérése, 2026-10-17) ------------------------------------
+// [név, hatás a kasszára, hatás a széfre]
+const PT={nyito:['Nyitó egyenleg',1,0],penztargep:['Pénztárgép készpénz (napi zárás)',1,0],zaro:['Záró egyenleg (számolt)',0,0],vasarlas:['Vásárlás a kasszából',-1,0],kivet:['Kivét a kasszából',-1,0],szefbe:['Széfbe',-1,1],
+  vasarlas_szef:['Vásárlás széfből',0,-1],kivet_szef:['Kivét széfből',0,-1]};
+function txtDlg(title,done){const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="dlg"><h3>${title}</h3><input id="tx" style="font-size:18px;width:100%;box-sizing:border-box;padding:10px" placeholder="pl. Lidl – tej, vagy üresen hagyható">
+  <div class="row"><button data-k="x">Kihagyom</button><button class="prim" data-k="ok">OK</button></div></div>`;
+  document.body.appendChild(m);const i=m.querySelector('#tx');setTimeout(()=>i.focus(),50);
+  m.onclick=e=>{const k=e.target.dataset.k;if(!k)return;const v=k==='ok'?i.value.trim():'';m.remove();done(v);};}
+// Címletes pénzszámolás (2026-10-17): nyitáskor → nyitó egyenleg, záráskor → záró egyenleg, eltéréssel.
+const CIMLET=[20000,10000,5000,2000,1000,500,200,100,50,20,10,5];
+async function szamolDlg(tipus,regi){const nyit=tipus==='nyito';const VK='szamolas_'+tipus+'_'+ma();
+  const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="dlg" style="width:min(520px,94vw);max-height:92vh;overflow-y:auto"><h3>Pénzszámolás – ${nyit?'nyitás':'zárás'}</h3>
+   <table style="width:100%;font-size:17px">${CIMLET.map(c=>`<tr><td style="padding:4px 6px">${c.toLocaleString('hu-HU')} Ft</td>
+   <td><input data-c="${c}" type="number" inputmode="numeric" min="0" placeholder="0" style="width:90px;font-size:18px;padding:6px;text-align:right"> db</td>
+   <td id="r${c}" style="text-align:right;padding:4px 6px;color:#7a6a58">–</td></tr>`).join('')}
+   <tr><td style="padding:4px 6px">Fiók (egy összegben)</td><td><input id="fiok" type="number" inputmode="numeric" min="0" placeholder="0" style="width:120px;font-size:18px;padding:6px;text-align:right"> Ft</td><td id="rfiok" style="text-align:right;padding:4px 6px;color:#7a6a58">–</td></tr>
+   <tr><td style="padding:8px 6px"><b>Összesen</b></td><td></td><td id="szt" style="text-align:right;padding:8px 6px;font-size:20px"><b>0 Ft</b></td></tr></table>
+   <div class="row"><button data-k="x">Mégse</button><button class="prim" data-k="ok">Mentés</button></div></div>`;
+  document.body.appendChild(m);
+  // Előtöltés: javításnál a mentett címletek, egyébként a félretett (még nem mentett) számolás.
+  let elo=regi&&regi.cimletek||null;if(!elo){try{elo=JSON.parse(LSG.getItem(VK)||'null');}catch(e){}}
+  if(!elo&&nyit){const z=await elozoZaro(ma());if(z&&z.cimletek)elo=z.cimletek;}
+  if(elo){m.querySelectorAll('input[data-c]').forEach(i=>{if(elo[i.dataset.c])i.value=elo[i.dataset.c];});if(elo.fiok)m.querySelector('#fiok').value=elo.fiok;}
+  const felretesz=()=>{const o={};m.querySelectorAll('input[data-c]').forEach(i=>{if(+i.value)o[i.dataset.c]=+i.value;});if(+m.querySelector('#fiok').value)o.fiok=+m.querySelector('#fiok').value;try{LSG.setItem(VK,JSON.stringify(o));}catch(e){}};
+  const szum=()=>{let t=0;m.querySelectorAll('input[data-c]').forEach(i=>{const c=+i.dataset.c,d=Math.max(0,Math.floor(+i.value||0));t+=c*d;m.querySelector('#r'+c).textContent=d?ft(c*d):'–';});const fk=Math.max(0,Math.round(+m.querySelector('#fiok').value||0));t+=fk;m.querySelector('#rfiok').textContent=fk?ft(fk):'–';m.querySelector('#szt').innerHTML='<b>'+ft(t)+'</b>';return t;};
+  m.addEventListener('input',()=>{szum();if(!regi)felretesz();});szum();
+  m.onclick=async e=>{const k=e.target.dataset.k;if(!k)return;if(k==='x'){m.remove();return;}
+    const cim={};m.querySelectorAll('input[data-c]').forEach(i=>{const d=Math.max(0,Math.floor(+i.value||0));if(d)cim[i.dataset.c]=d;});
+    const fk=Math.max(0,Math.round(+m.querySelector('#fiok').value||0));if(fk)cim.fiok=fk;
+    const t=szum();m.remove();
+    if(regi){await put('penz',{...regi,osszeg:t,cimletek:cim,eredeti_osszeg:regi.eredeti_osszeg??regi.osszeg,javitva:nowISO(),javito:user.nev,szinkron:false});}
+    else{await put('penz',{id:uid(),ido:nowISO(),dolgozo:user.nev,tipus,osszeg:t,cimletek:cim,megjegyzes:'címletes számolás',szinkron:false});try{LSG.removeItem(VK);}catch(e){}}
+    toast((nyit?'Nyitó':'Záró')+' egyenleg: '+ft(t));penzView();szinkron();};}
+function penzUj(tipus){if(tipus==='nyito'||tipus==='zaro')return szamolDlg(tipus);numDlg(PT[tipus][0]+' – összeg (Ft)','',v=>{const n=+v;if(!(n>0))return;
+  const ment=async megj=>{await put('penz',{id:uid(),ido:nowISO(),dolgozo:user.nev,tipus,osszeg:n,megjegyzes:megj||null,szinkron:false});toast(PT[tipus][0]+': '+ft(n));penzView();szinkron();};
+  if(tipus.startsWith('vasarlas')||tipus.startsWith('kivet'))txtDlg(tipus.startsWith('vasarlas')?'Mit vettél, hol?':'Megjegyzés (ki, mire)',ment);else ment(null);},false,'Ft');}
+async function penzJavit(rid){const s=(await all('penz')).find(x=>x.id===rid);if(!s)return;
+  if((s.tipus==='nyito'||s.tipus==='zaro')&&s.cimletek)return szamolDlg(s.tipus,s);
+  numDlg(PT[s.tipus][0]+' – eddig '+ft(s.osszeg)+'; helyes összeg (0 = törlés)','',async v=>{if(v===''||isNaN(+v))return;const n=+v;if(n===+s.osszeg)return;
+    await put('penz',{...s,osszeg:n,eredeti_osszeg:s.eredeti_osszeg??s.osszeg,javitva:nowISO(),javito:user.nev,szinkron:false});toast(n===0?'Törölve':'Javítva: '+ft(n));penzView();szinkron();},false,'Ft');}
+async function elozoZaro(nap){return (await all('penz')).filter(x=>x.tipus==='zaro'&&napja(x.ido)<nap&&+x.osszeg>0).sort((a,b)=>b.ido.localeCompare(a.ido))[0]||null;}
+async function penzView(){
+  const nap=ma();const P=(await all('penz')).filter(x=>napja(x.ido)===nap).sort((a,b)=>a.ido.localeCompare(b.ido));
+  const kp=(await all('eladas')).filter(e=>napja(e.ido)===nap&&e.fizetes==='keszpenz').reduce((s,e)=>s+(+e.osszeg),0);
+  const S={};Object.keys(PT).forEach(k=>S[k]=0);P.forEach(x=>{if(x.tipus in S)S[x.tipus]+=(+x.osszeg);});
+  // A zárás a következő nap nyitója (a tulajdonos kérése, 2026-10-17): ha ma nincs nyitó számolás, az előző záró összege.
+  const elozo=await elozoZaro(nap);let autoNyito=false;
+  if(!P.some(x=>x.tipus==='nyito')&&elozo){S.nyito=+elozo.osszeg;autoNyito=true;}
+  const kassza=kp+Object.entries(PT).reduce((a,[k,v])=>a+v[1]*S[k],0), szef=Object.entries(PT).reduce((a,[k,v])=>a+v[2]*S[k],0);
+  $('#main').innerHTML=`<div class="sale"><div class="left" style="overflow-y:auto">
+   <div class="muted" style="padding:10px">Koppints a tételre, írd be az összeget. A vásárlásnál és a kivétnél írd mellé, mire ment.</div>
+   <div class="grid" style="flex:none;padding-bottom:10px">${Object.entries(PT).map(([k,[n,e,f]])=>`<button class="p kis" onclick="penzUj('${k}')"><span class="n" style="font-size:18px;font-weight:600">${n}</span><span class="muted">${k==='nyito'||k==='zaro'?'címletenként számolva':k==='penztargep'?'zárási blokkról, + kassza':[e>0?'+ kassza':e<0?'− kassza':'',f>0?'+ széf':f<0?'− széf':''].filter(Boolean).join(', ')}</span></button>`).join('')}</div>
+   <div class="box" style="margin:10px"><h3>Mai összesítő</h3><table>
+    <tr><th>Tétel</th><th style="text-align:right">Kassza</th><th style="text-align:right">Széf</th></tr>
+    ${Object.entries(PT).filter(([k])=>k!=='zaro').map(([k,[n,e,f]])=>`<tr><td>${k==='nyito'&&autoNyito?n+' (előző zárásból, '+napja(elozo.ido)+')':n}</td><td style="text-align:right">${e?(e>0?'+ ':'− ')+ft(S[k]):''}</td><td style="text-align:right">${f?(f>0?'+ ':'− ')+ft(S[k]):''}</td></tr>`).join('')}
+    <tr><td>Készpénzes eladás (ezen a gépen)</td><td style="text-align:right">+ ${ft(kp)}</td><td></td></tr>
+    <tr><td><b>Várható készpénz a kasszában</b></td><td style="text-align:right"><b>${ft(kassza)}</b></td><td></td></tr>
+    ${S.zaro?`<tr><td><b>Záráskor számolt</b></td><td style="text-align:right"><b>${ft(S.zaro)}</b></td><td></td></tr>
+    <tr><td><b>Eltérés</b></td><td style="text-align:right;color:${S.zaro-kassza===0?'#2e7d32':'#c0392b'}"><b>${S.zaro-kassza===0?'egyezik':(S.zaro-kassza>0?'többlet + ':'hiány − ')+ft(Math.abs(S.zaro-kassza))}</b></td><td></td></tr>`:''}
+    <tr><td><b>Széf mai változása</b></td><td></td><td style="text-align:right"><b>${szef>=0?'+ ':'− '}${ft(Math.abs(szef))}</b></td></tr></table>
+    <p class="muted">Amíg az eladást a pénztárgépen ütik: záráskor a „Pénztárgép készpénz” gombbal írd be a pénztárgép napi készpénzes forgalmát (zárási blokk), különben a várható egyenleg nem valós. A programban rögzített készpénzes eladás külön sor.</p>
+    ${!S.nyito?'<p style="color:#c0392b">Nincs nyitó egyenleg és előző zárás sem – nélküle a várható egyenleg nem pontos.</p>':''}</div></div>
+   <div class="cart"><h2>Mai pénzmozgás</h2><div class="items">${P.map(x=>`<div class="it"${+x.osszeg===0&&x.javitva?' style="opacity:.5"':''}><span class="n">${(PT[x.tipus]||[x.tipus])[0]}: ${+x.osszeg===0&&x.javitva?'törölve':ft(x.osszeg)}<br><span class="muted">${new Date(x.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${x.dolgozo}${x.cimletek&&Object.keys(x.cimletek).length?' · '+Object.entries(x.cimletek).filter(([c])=>c!=='fiok').sort((a,b)=>b[0]-a[0]).map(([c,d])=>d+'×'+(+c).toLocaleString('hu-HU')).concat(x.cimletek.fiok?['fiók '+ft(x.cimletek.fiok)]:[]).join(', '):(x.megjegyzes?' · '+x.megjegyzes:'')}${x.javitva?` · javítva (eredetileg ${ft(x.eredeti_osszeg)}, ${x.javito})`:''}</span></span><button class="jv" onclick="penzJavit('${x.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;}
+
+// ---- statisztika ----------------------------------------------------------------
+let statNap=ma();
+async function statAdat(){
+  if(!GYAKORLO&&tulajJelszo&&navigator.onLine){try{await szinkron();const r=await fetch(SB_URL+'/rest/v1/rpc/tulaj_adatok',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({p_jelszo:tulajJelszo,p_tol:statNap,p_ig:statNap})});
+    if(r.ok){const d=await r.json();return {el:d.eladas,su:d.sutes,forras:'online adatbázis (minden eszköz)'};}}catch(e){}}
+  return {el:(await all('eladas')).filter(e=>napja(e.ido)===statNap),su:(await all('sutes')).filter(e=>napja(e.ido)===statNap),forras:'ezen az eszközön rögzített adatok'};}
+async function statView(){
+  const {el,su,forras}=await statAdat();
+  const hour=i=>new Date(i).getHours();
+  const tot=el.reduce((s,e)=>s+e.osszeg,0), vevo=el.length;
+  const kp=el.filter(e=>e.fizetes==='keszpenz').reduce((s,e)=>s+e.osszeg,0);
+  const H={};for(let h=5;h<=18;h++)H[h]={ft:0,db:0,vevo:0,sut:0};
+  el.forEach(e=>{e.osszeg=+e.osszeg;const h=H[hour(e.ido)]||(H[hour(e.ido)]={ft:0,db:0,vevo:0,sut:0});h.ft+=e.osszeg;h.vevo++;h.db+=e.tetelek.reduce((s,t)=>s+(t.egyseg==='db'?t.menny:1),0);});
+  su.forEach(s=>{const h=H[hour(s.ido)]||(H[hour(s.ido)]={ft:0,db:0,vevo:0,sut:0});h.sut+=+s.db;});
+  const max=Math.max(1,...Object.values(H).map(h=>h.ft));
+  const D={};el.forEach(e=>{const d=D[e.dolgozo]||(D[e.dolgozo]={ft:0,vevo:0});d.ft+=e.osszeg;d.vevo++;});
+  const A={};el.forEach(e=>e.tetelek.forEach(t=>{const a=t.afa||'?';A[a]=(A[a]||0)+(+t.osszeg);}));
+  const P={};el.forEach(e=>e.tetelek.forEach(t=>{const p=P[t.nev]||(P[t.nev]={menny:0,egyseg:t.egyseg,ft:0});p.menny+=t.menny;p.ft+=t.osszeg;}));
+  $('#main').innerHTML=`<div class="panel">
+   <div class="box" style="display:flex;gap:10px;align-items:center"><b>Nap:</b><input type="date" value="${statNap}" onchange="statNap=this.value;statView()" style="font-size:17px;padding:6px"><span class="muted">Forrás: ${forras}</span></div>
+   <div class="kpis"><div class="kpi">Bevétel<b>${ft(tot)}</b></div><div class="kpi">Vevőszám<b>${vevo}</b></div>
+    <div class="kpi">Átlagos kosár<b>${vevo?ft(tot/vevo):'–'}</b></div><div class="kpi">Készpénz / kártya<b style="font-size:18px">${ft(kp)} / ${ft(tot-kp)}</b></div></div>
+   <div class="box" style="margin-top:12px"><h3>Óránként</h3><table><tr><th>Óra</th><th>Bevétel</th><th></th><th>Vevő</th><th>Eladott db</th><th>Sütés db</th></tr>
+    ${Object.entries(H).sort((a,b)=>a[0]-b[0]).map(([h,v])=>`<tr><td>${h}–${+h+1}</td><td>${ft(v.ft)}</td><td style="width:30%"><div class="bar" style="width:${v.ft/max*100}%"></div></td><td>${v.vevo}</td><td>${v.db}</td><td>${v.sut}</td></tr>`).join('')}</table></div>
+   <div class="box"><h3>Dolgozónként</h3><table><tr><th>Dolgozó</th><th>Bevétel</th><th>Vevő</th><th>Átlagos kosár</th></tr>
+    ${Object.entries(D).sort((a,b)=>b[1].ft-a[1].ft).map(([n,v])=>`<tr><td>${n}</td><td>${ft(v.ft)}</td><td>${v.vevo}</td><td>${ft(v.ft/v.vevo)}</td></tr>`).join('')||'<tr><td colspan=4 class="muted">Nincs adat</td></tr>'}</table></div>
+   <div class="box"><h3>ÁFA szerint (bruttó)</h3><table><tr><th>ÁFA</th><th>Bevétel</th><th>ebből ÁFA</th></tr>
+    ${Object.entries(A).sort((a,b)=>a[0]-b[0]).map(([a,v])=>`<tr><td>${a}${a==='?'?'':'%'}</td><td>${ft(v)}</td><td>${a==='?'?'–':ft(v*a/(100+ +a))}</td></tr>`).join('')||'<tr><td colspan=3 class="muted">Nincs adat</td></tr>'}</table></div>
+   <div class="box"><h3>Termékenként</h3><table><tr><th>Termék</th><th>Mennyiség</th><th>Bevétel</th></tr>
+    ${Object.entries(P).sort((a,b)=>b[1].ft-a[1].ft).map(([n,v])=>`<tr><td>${n}</td><td>${v.menny} ${v.egyseg}</td><td>${ft(v.ft)}</td></tr>`).join('')||'<tr><td colspan=3 class="muted">Nincs adat</td></tr>'}</table></div></div>`;}
+
+// ---- beállítások (tulajdonos) -----------------------------------------------------
+function setView(){
+  $('#main').innerHTML=`<div class="panel"><div class="box"><h3>Külső kapcsolatok</h3>
+   <p class="muted">Kiépítve, de egyelőre kikapcsolva (a tulajdonos döntése, 2026-10-16). Bekapcsolás később, a hiányzó beállítások után.</p>
+   ${[['weboldal','Weboldal (árak, „most kapható”)'],['google','Google Cégprofil („Most sült ki” javaslat, zárás)'],['facebook','Facebook (történetjavaslat)']].map(([k,n])=>
+   `<div class="sw"><span>${n}</span><span class="muted">${KAPCSOLATOK[k]?'bekapcsolva':'kikapcsolva'}</span></div>`).join('')}</div>
+   <div class="box"><h3>Adatok</h3><p class="muted">Az adatok ezen az iPaden is megvannak (internet nélkül is). Az online adatbázis a Supabase-fiók után kapcsolódik.</p></div></div>`;}
+
+// ---- indulás ---------------------------------------------------------------------
+window.addEventListener('online',()=>{render();szinkron();});window.addEventListener('offline',render);
+async function termekekBetolt(){
+  if(!GYAKORLO)try{const r=await sb('termekek?select=id,nev,rovid,kat,ar,egyseg,foto,sorrend,allergen,allergen_forras,afa,helyben5&order=sorrend');if(r.ok){const d=await r.json();if(d.length){LSG.setItem('termekek',JSON.stringify(d));return d;}}}catch(e){}
+  try{const c=LSG.getItem('termekek');if(c)return JSON.parse(c);}catch(e){}
+  return await (await fetch('termekek.json')).json();}
+(async()=>{await openDB();await gySeed();TERMEKEK=await termekekBetolt();FAJTAK=await fajtakBetolt();KIFOGY=await jsonBetolt('kifogyas.json');szinkron();
+  
+  const q=new URLSearchParams(location.search);
+  if(q.get('demo')){await demo(q.get('demo'));}
+  render();})();
+// Bemutató / teszt: ?demo=elad | stat — tesztadatot tölt be, csak próbához.
+async function demo(nezet){
+  user=nezet==='stat'?{nev:'Tulajdonos',tulaj:true}:{nev:'Teszt'};tab=nezet;
+  if(nezet==='elad'){const b=TERMEKEK.find(t=>t.kat==='Kenyerek');kosar=[{id:b.id,nev:b.nev,egyseg:'db',menny:2,ar:b.ar,osszeg:2*b.ar}];
+    const k=TERMEKEK.find(t=>t.nev.startsWith('Kifli vázsonyi'));if(k){kosar.push({id:k.id,nev:k.nev,egyseg:'db',menny:5,ar:k.ar,osszeg:5*k.ar});}return;}
+  if((await all('eladas')).length)return;
+  const nap=ma();statNap=nap;
+  const pek=TERMEKEK.filter(t=>t.kat==='Péksütemények'||t.kat==='Kávé, tea');const EL=[],SU=[];
+  for(let h=5;h<18;h++){const n=h<9?14:h<12?9:5;for(let i=0;i<n;i++){const x=new Date(nap+'T00:00:00');x.setHours(h,Math.floor(Math.random()*60));
+    const t=[pek[Math.floor(Math.random()*pek.length)],pek[Math.floor(Math.random()*pek.length)]].map(p=>({id:p.id,nev:p.nev,egyseg:'db',menny:1,ar:p.ar,osszeg:p.ar}));
+    EL.push({id:uid(),ido:x.toISOString(),dolgozo:i%3?'Teszt Anna':'Teszt Béla',fizetes:i%2?'kartya':'keszpenz',tetelek:t,osszeg:t.reduce((s,k)=>s+k.osszeg,0),demo:true});}
+    if(h<11){const x=new Date(nap+'T00:00:00');x.setHours(h,10);SU.push({id:uid(),ido:x.toISOString(),termek_id:1,nev:'Sajtos pogácsa',db:30,dolgozo:'Teszt Béla',demo:true});}}
+  await putMany('eladas',EL);await putMany('sutes',SU);}
+</script>
+</body>
+</html>

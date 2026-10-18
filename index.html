@@ -65,7 +65,7 @@ th:first-child,td:first-child{text-align:left}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
 .kpi b{display:block;font-size:24px;margin-top:4px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:9}
-.dlg{background:var(--card);border-radius:18px;padding:20px;width:360px}
+.dlg{background:var(--card);border-radius:18px;padding:20px;width:360px;max-width:94vw}
 .dlg h3{margin:0 0 10px}
 .dlg input{width:100%;font-size:28px;padding:10px;border:1px solid var(--line);border-radius:10px;text-align:center}
 .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
@@ -79,6 +79,18 @@ th:first-child,td:first-child{text-align:left}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;z-index:10}
 .bar{height:10px;background:var(--brand);border-radius:5px}
 .sw{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+/* Telefon (keskeny képernyő): a kosár alulra kerül, a fülek sorba törnek (2026-10-18) */
+@media (max-width:820px){
+ #app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+ main{flex:1;height:auto;min-height:0}
+ .top{flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:8px 10px;flex:none}.top h1{display:none}.top .tab{flex:none;white-space:nowrap}.top .tab{padding:8px 11px;font-size:14px}.top .net,.top .who{display:none}.top .sp{display:none}
+ .sale{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 38dvh}
+ .cart{border-left:0;border-top:2px solid var(--line)}
+ .grid{grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:6px;padding:0 8px 40px}
+ .p .n{font-size:12px;min-height:30px}.p .a{font-size:13px}.cats{padding:8px}.search{margin:0 8px 6px}
+ .p .db{font-size:24px}.p .lk{height:48px}
+ .panel{padding:10px 10px 60px}.box table{font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -131,7 +143,7 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='26'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='27'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
