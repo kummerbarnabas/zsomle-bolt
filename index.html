@@ -36,6 +36,7 @@ main{height:calc(100vh - 62px);height:calc(100dvh - 62px);overflow:hidden}
 .p .a{font-weight:700;color:var(--brand)}
 .p .db{font-size:30px;font-weight:700;color:var(--brand);line-height:1}.p .mi{position:absolute;top:6px;left:6px;padding:2px 8px;border-radius:12px;background:#eee;font-size:13px;color:#555}
 .lcs{padding:8px 12px 2px;font-weight:700;color:#8B5A2B}
+.p .lk{display:block;width:100%;height:64px;border-radius:6px}.p.kis{min-height:100px}.p .ora{position:absolute;top:6px;right:6px;padding:2px 8px;border-radius:12px;background:#2e7d32;color:#fff;font-size:14px;font-weight:700}
 .p{position:relative}
 .p .al{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:13px;background:#c0392b;color:#fff;font-size:13px;font-weight:700;line-height:26px}
 .aldlg{background:#fff;border-radius:12px;padding:18px;max-width:420px;font-size:16px;line-height:1.4}
@@ -97,7 +98,7 @@ const DOLGOZOK = [
 const TULAJ_H = 'a623a76850b821af97cc29e48e64916730601a751285edd0bb773991ea4d7c83';
 // Dolgozói fülek (a tulajdonos döntése, 2026-10-17): eladás, sütés, maradék, pénzmozgás; a statisztika és a beállítások csak a tulajdonosé.
 // Az eladás bekapcsolásához ide kell felvenni az 'elad' fület.
-const DOLGOZOI_FULEK = ['elad','lap','sut','mar','penz'];
+const DOLGOZOI_FULEK = ['elad','lap','sut','kif','mar','penz'];
 let tulajJelszo = null; // csak a memóriában, a szerveres statisztikához
 async function lenyomat(pin){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('zsomle:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 // Külső kapcsolatok: kiépítve, de a felhasználó döntése szerint (2026-10-16) kikapcsolva.
@@ -106,8 +107,8 @@ const NYITVA = {1:[5,18],2:[5,18],3:[5,18],4:[5,18],5:[5,18],6:[6,12]}; // hétf
 
 // ---- tárolás: IndexedDB, internet nélkül is ------------------------------------
 let db;
-function openDB(){return new Promise((ok,err)=>{const r=indexedDB.open('zsomle-bolt',3);
-  r.onupgradeneeded=()=>{const d=r.result;for(const s of ['eladas','sutes','maradek','penz','vonal'])if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'});};
+function openDB(){return new Promise((ok,err)=>{const r=indexedDB.open('zsomle-bolt',4);
+  r.onupgradeneeded=()=>{const d=r.result;for(const s of ['eladas','sutes','maradek','penz','vonal','kifogy'])if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'});};
   r.onsuccess=()=>{db=r.result;ok()};r.onerror=err;});}
 function put(store,obj){return new Promise(ok=>{const t=db.transaction(store,'readwrite');t.objectStore(store).put(obj);t.oncomplete=ok;});}
 function putMany(store,arr){return new Promise(ok=>{const t=db.transaction(store,'readwrite');const s=t.objectStore(store);arr.forEach(o=>s.put(o));t.oncomplete=ok;});}
@@ -120,17 +121,17 @@ const ma=()=>napja(new Date().toISOString());
 let szinkronFut=false, varakozik=0;
 async function szinkron(){
   if(szinkronFut||!navigator.onLine)return;szinkronFut=true;
-  try{const L={};for(const s of ['eladas','sutes','maradek','penz','vonal'])L[s]=(await all(s)).filter(r=>!r.szinkron&&!r.demo);
-    const n=L.eladas.length+L.sutes.length+L.maradek.length+L.penz.length+L.vonal.length;
+  try{const L={};for(const s of ['eladas','sutes','maradek','penz','vonal','kifogy'])L[s]=(await all(s)).filter(r=>!r.szinkron&&!r.demo);
+    const n=L.eladas.length+L.sutes.length+L.maradek.length+L.penz.length+L.vonal.length+L.kifogy.length;
     if(n){const r=await fetch(SB_URL+'/rest/v1/rpc/bekuld',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},
-        body:JSON.stringify({p_eladas:L.eladas,p_sutes:L.sutes,p_maradek:L.maradek,p_penz:L.penz,p_vonal:L.vonal})});
+        body:JSON.stringify({p_eladas:L.eladas,p_sutes:L.sutes,p_maradek:L.maradek,p_penz:L.penz,p_vonal:L.vonal,p_kifogy:L.kifogy})});
       if(r.ok){for(const s in L)await putMany(s,L[s].map(x=>({...x,szinkron:true})));}}
   }catch(e){}finally{szinkronFut=false;varakozik=await fuggo();const e=document.getElementById('fuggo');if(e)e.textContent=varakozik?varakozik+' felküldésre vár':'';}}
-async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz','vonal'])n+=(await all(s)).filter(r=>!r.szinkron&&!r.demo).length;return n;}
+async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz','vonal','kifogy'])n+=(await all(s)).filter(r=>!r.szinkron&&!r.demo).length;return n;}
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='25'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='26'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -170,13 +171,13 @@ function numDlg(title,init,done,pw,unit,maxlen){
 // ---- fő nézet ------------------------------------------------------------------
 function render(){
   if(!user)return loginView();
-  let tabs=[['elad','Eladás'],['lap','Napi lap'],['sut','Sütés'],['mar','Maradék / selejt'],['penz','Pénz'],['stat','Statisztika']];
+  let tabs=[['elad','Eladás'],['lap','Napi lap'],['sut','Sütés'],['kif','Elfogyott'],['mar','Maradék / selejt'],['penz','Pénz'],['stat','Statisztika']];
   if(!user.tulaj){tabs=tabs.filter(([k])=>DOLGOZOI_FULEK.includes(k));if(!DOLGOZOI_FULEK.includes(tab))tab=DOLGOZOI_FULEK[0];}
   if(user.tulaj)tabs.push(['beall','Beállítások']);
   $('#app').innerHTML=`<div class="top"><h1>Zsömle</h1>${tabs.map(([k,n])=>`<button class="tab ${tab===k?'on':''}" onclick="tab='${k}';render()">${n}</button>`).join('')}
   <span class="sp"></span><span class="net" id="fuggo">${varakozik?varakozik+' felküldésre vár':''}</span><span class="net">${navigator.onLine?'online':'offline – helyben mentve'}</span>
   <span class="who">${user.nev}</span><button class="tab" title="Új változat betöltése" onclick="frissit()">v${VALTOZAT} ↻</button><button class="tab" onclick="user=null;tulajJelszo=null;kosar=[];render()">Kilépés</button></div><main id="main"></main>`;
-  ({elad:saleView,lap:lapView,sut:bakeView,mar:leftView,penz:penzView,stat:statView,beall:setView})[tab]();}
+  ({elad:saleView,lap:lapView,sut:bakeView,kif:kifView,mar:leftView,penz:penzView,stat:statView,beall:setView})[tab]();}
 
 // ---- eladás --------------------------------------------------------------------
 // Keresés: kis- és nagybetű, valamint ékezet nélkül is talál (pl. „pogacsa”).
@@ -262,7 +263,12 @@ function mar(id){const t=TERMEKEK.find(x=>x.id===id);const eg=t.egyseg==='kg'?'d
   numDlg(t.nev+' – '+(marTipus==='selejt'?'selejt':'maradék'),'',async v=>{const n=+v;if(v!==''){await put('maradek',{id:uid(),ido:nowISO(),termek_id:id,nev:t.nev,tipus:marTipus,menny:n,egyseg:eg,dolgozo:user.nev,szinkron:false});toast('Mentve');leftView();}},false,'darab');}
 
 // ---- napi eladás lap (2026-10-18): a papíros hot dog / hamburger / szendvics / Foodora / Munch / kávé lap a tableten ----
-let FAJTAK=[];
+let FAJTAK=[],KIFOGY=[];
+const FAJTA_KEP={'Foodora rendelés':'logo-foodora.png','Munch csomag':'logo-munch.png'};
+function kepSrc(foto){return foto?(/^https?:/.test(foto)?foto:'foto/'+foto):'';}
+function fajtaKep(f){if(FAJTA_KEP[f])return FAJTA_KEP[f];const t=TERMEKEK.find(x=>x.nev===f);return t&&t.foto?kepSrc(t.foto):'';}
+async function jsonBetolt(fn){try{const r=await fetch(fn,{cache:'no-store'});if(r.ok){const d=await r.json();try{localStorage.setItem(fn,JSON.stringify(d));}catch(e){}return d;}}catch(e){}
+  try{return JSON.parse(localStorage.getItem(fn)||'[]');}catch(e){return [];}}
 async function fajtakBetolt(){try{const r=await fetch('fajtak.json',{cache:'no-store'});if(r.ok){const d=await r.json();try{localStorage.setItem('fajtak',JSON.stringify(d));}catch(e){}return d;}}catch(e){}
   try{return JSON.parse(localStorage.getItem('fajtak')||'[]');}catch(e){return [];}}
 async function lapAdat(){const V=(await all('vonal')).filter(x=>napja(x.ido)===ma()).sort((a,b)=>a.ido.localeCompare(b.ido));
@@ -276,11 +282,37 @@ async function lapSzam(fajta,tipus){const {M,O}=await lapAdat();const eddig=tipu
 async function lapView(){const {E,M,O}=await lapAdat();const q=(s)=>s.replace(/'/g,"\\'");
   $('#main').innerHTML=`<div class="sale"><div class="left" style="overflow-y:auto">
    <div class="muted" style="padding:10px">Minden eladásnál koppints a fajtára (egy koppintás = egy darab, a Foodora-rendelés termékeit is). Tévedésnél a „−1”. Este írd be, ami maradt vagy kidobásra került, és a Foodora / Munch napi összegét.</div>
-   ${FAJTAK.map(g=>`<div class="lcs">${g.nev}</div><div class="grid" style="flex:none;padding-bottom:6px">${g.fajtak.map(f=>`<button class="p kis" onclick="vonal('${q(f)}',1)"><span class="mi" onclick="event.stopPropagation();vonal('${q(f)}',-1)">−1</span><span class="db">${E[f]||0}</span><span class="n">${f}</span></button>`).join('')}</div>`).join('')||'<p class="muted" style="padding:10px">A fajták listája nem töltődött be – frissíts (↻).</p>'}
+   ${FAJTAK.map(g=>`<div class="lcs">${g.nev}</div><div class="grid" style="flex:none;padding-bottom:6px">${g.fajtak.map(f=>`<button class="p kis" onclick="vonal('${q(f)}',1)"><span class="mi" onclick="event.stopPropagation();vonal('${q(f)}',-1)">−1</span>${fajtaKep(f)?`<span class="lk" style="background:#fff url('${fajtaKep(f)}') center/contain no-repeat"></span>`:''}<span class="db">${E[f]||0}</span><span class="n">${f}</span></button>`).join('')}</div>`).join('')||'<p class="muted" style="padding:10px">A fajták listája nem töltődött be – frissíts (↻).</p>'}
    </div><div class="cart"><h2>Este beírandó</h2><div class="items">
    ${FAJTAK.filter(g=>g.maradek||g.osszeg).map(g=>`<div class="lcs">${g.nev}</div>`+g.fajtak.map(f=>`<div class="it"><span class="n">${f}<br><span class="muted">eladva ${E[f]||0} db${g.maradek?' · maradt/kidobva: '+(M[f]!=null?M[f]+' db':'–'):''}${g.osszeg?' · összeg: '+(O[f]!=null?ft(O[f]):'–'):''}</span></span>
      <button class="jv" onclick="lapSzam('${q(f)}','${g.osszeg?'osszeg':'maradt'}')">${g.osszeg?'Összeg':'Maradt'}</button></div>`).join('')).join('')}
    </div></div></div>`;}
+
+// ---- „Mikor fogyott el?” (a heti papírlap helyett, 2026-10-18) ----------------------------------------------
+async function kifAdat(){const m={};(await all('kifogy')).filter(x=>napja(x.ido)===ma()).forEach(x=>{m[x.termek]=x;});return m;}
+function oraDlg(cim,elo,torolheto,done){const m=document.createElement('div');m.className='modal';const d=new Date();const most=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  m.innerHTML=`<div class="dlg"><h3>${cim}</h3><p class="muted" style="margin:0 0 8px">Hánykor fogyott el az utolsó darab?</p>
+   <input id="ti" type="time" value="${elo||most}" style="font-size:34px;padding:10px;width:100%;box-sizing:border-box;text-align:center">
+   <div class="row"><button data-k="x">Mégse</button>${torolheto?'<button data-k="del">Törlés</button>':''}<button class="prim" data-k="ok">Mentés</button></div></div>`;
+  document.body.appendChild(m);m.onclick=e=>{const k=e.target.dataset.k;if(!k)return;const v=m.querySelector('#ti').value;m.remove();if(k==='ok'&&v)done(v);else if(k==='del')done('');};}
+async function kifMent(termek,ora){const M=await kifAdat();const e=M[termek];
+  if(e){await put('kifogy',{...e,ora,eredeti_ora:e.eredeti_ora??e.ora,javitva:nowISO(),javito:user.nev,szinkron:false});}
+  else{await put('kifogy',{id:uid(),ido:nowISO(),dolgozo:user.nev,termek,ora,szinkron:false});}
+  toast(ora?'Mentve: '+ora:'Törölve');kifView();szinkron();}
+async function kifKoppint(i){const k=KIFOGY[i];const e=(await kifAdat())[k.termek];const mar=e&&e.ora;
+  oraDlg(k.lap,mar?e.ora:'',!!mar,v=>kifMent(k.termek,v));}
+let kifKeres='';
+async function kifView(){const M=await kifAdat();const lista=Object.values(M).filter(x=>x.ora).sort((a,b)=>a.ora.localeCompare(b.ora));
+  $('#main').innerHTML=`<div class="sale"><div class="left">
+   <div class="muted" style="padding:10px 10px 0">Amikor egy termékből az utolsó darab is elfogyott, koppints rá, és mentsd az időpontot (alapból a mostani idő). Ami zárásig megmaradt, azt ne érintsd.</div>
+   <input class="search" placeholder="Keresés…" value="${kifKeres}" oninput="kifKeres=this.value;kifGrid()">
+   <div class="grid" id="kgrid"></div></div>
+   <div class="cart"><h2>Mai kifogyások</h2><div class="items">${lista.map(x=>{const k=KIFOGY.find(y=>y.termek===x.termek)||{lap:x.termek};return `<div class="it"><span class="n">${k.lap}<br><span class="muted">${x.ora} · ${x.dolgozo}${x.javitva?' · javítva':''}</span></span><button class="jv" onclick="kifKoppint(${KIFOGY.indexOf(k)})">Javít</button></div>`;}).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;kifGrid();}
+async function kifGrid(){const M=await kifAdat();let h='',cs='';
+  KIFOGY.forEach((k,i)=>{if(kifKeres&&!nrm(k.lap+' '+k.termek).includes(nrm(kifKeres)))return;if(k.besz!==cs){cs=k.besz;h+=`<div class="lcs" style="grid-column:1/-1;padding:4px 2px 0">${cs}</div>`;}
+    const t=TERMEKEK.find(x=>x.nev===k.termek);const src=t&&t.foto?kepSrc(t.foto):'';const e=M[k.termek];
+    h+=`<button class="p" onclick="kifKoppint(${i})" style="position:relative">${e&&e.ora?`<span class="ora">${e.ora}</span>`:''}<span class="kep" ${src?`style="background:#fff url('${src}') center/contain no-repeat"`:''}>${src?'':k.lap.slice(0,1)}</span><span class="n">${k.lap}</span></button>`;});
+  const g=$('#kgrid');if(g)g.innerHTML=h||'<p class="muted" style="padding:10px">Nincs találat</p>';}
 
 // ---- pénzmozgás (a tulajdonos kérése, 2026-10-17) ------------------------------------
 // [név, hatás a kasszára, hatás a széfre]
@@ -394,7 +426,7 @@ async function termekekBetolt(){
   try{const r=await sb('termekek?select=id,nev,rovid,kat,ar,egyseg,foto,sorrend,allergen,allergen_forras,afa,helyben5&order=sorrend');if(r.ok){const d=await r.json();if(d.length){localStorage.setItem('termekek',JSON.stringify(d));return d;}}}catch(e){}
   try{const c=localStorage.getItem('termekek');if(c)return JSON.parse(c);}catch(e){}
   return await (await fetch('termekek.json')).json();}
-(async()=>{await openDB();TERMEKEK=await termekekBetolt();FAJTAK=await fajtakBetolt();szinkron();
+(async()=>{await openDB();TERMEKEK=await termekekBetolt();FAJTAK=await fajtakBetolt();KIFOGY=await jsonBetolt('kifogyas.json');szinkron();
   if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
     let ujra=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!ujra){ujra=true;location.reload();}});}
   const q=new URLSearchParams(location.search);
