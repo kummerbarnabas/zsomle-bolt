@@ -42,6 +42,7 @@ main{height:calc(100vh - 62px);height:calc(100dvh - 62px);overflow:hidden}
 .lapg{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px;padding:0 10px 40px;align-content:start;-webkit-overflow-scrolling:touch}
 .lgc{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;border-radius:8px;text-align:center;font-size:13px;padding:4px}
 .p.lt{padding:4px 4px 6px;min-height:0;gap:2px}.p.lt .lk{height:42px}.p.lt .db{font-size:26px}.p.lt .n{font-size:11.5px;line-height:1.15;min-height:26px}.p.fl{background:#fff3cd;transition:background .1s}
+.par{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:6px}.ftcs{background:#fff7fa}.ftcs .db{font-size:26px}.ftcs .ftk{font-size:13px;font-weight:700;color:#7a1f3d}
 .estigomb{padding:12px 16px;font-size:16px;background:#e8eef7;border:1px solid #9bb0d3;border-radius:10px;color:#1d3b66}
 .vissza{padding:12px 16px;font-size:16px;background:#fff3cd;border:1px solid #e0c36a;border-radius:10px;color:#5a4400}.vissza:disabled{opacity:.45}
 .p .lk{display:block;width:100%;height:64px;border-radius:6px}.p.kis{min-height:100px}.p .ora{position:absolute;top:6px;right:6px;padding:2px 8px;border-radius:12px;background:#2e7d32;color:#fff;font-size:14px;font-weight:700}
@@ -156,7 +157,7 @@ async function fuggo(){if(GYAKORLO)return 0;let n=0;for(const s of ['eladas','su
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='31'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='32'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -324,9 +325,11 @@ async function esti(){estiNyitva=true;const {E,M,O}=await lapAdat();document.que
 async function lapView(){const {E,V,O}=await lapAdat();const ut=lapUtolso(V);LAPF=[];let h='';
   FAJTAK.forEach(g=>{const sz=LAP_SZIN[g.nev]||'#888';h+=`<div class="lgc" style="background:${sz}">${g.nev}</div>`;
     g.fajtak.forEach(f=>{const i=LAPF.push(f)-1;const k=fajtaKep(f);
-      h+=`<button class="p kis lt" data-i="${i}" style="border-top:4px solid ${sz}" onclick="vonal(LAPF[${i}],1)">${k?`<span class="lk" style="background:#fff url('${k}') center/contain no-repeat"></span>`:''}<span class="db">${E[f]||0}</span><span class="n">${f}</span></button>`;});});
+      if(g.osszeg)h+='<div class="par">';
+      h+=`<button class="p kis lt" data-i="${i}" style="border-top:4px solid ${sz}" onclick="vonal(LAPF[${i}],1)">${k?`<span class="lk" style="background:#fff url('${k}') center/contain no-repeat"></span>`:''}<span class="db">${E[f]||0}</span><span class="n">${f}</span></button>`;
+      if(g.osszeg)h+=`<button class="p kis lt ftcs" style="border-top:4px solid ${sz}" onclick="lapSzam('${f}','osszeg')"><span class="ftk">Ft</span><span class="db">${O[f]!=null?ft(O[f]):'–'}</span><span class="n">${f.split(' ')[0]} napi összeg</span></button></div>`;});});
   $('#main').innerHTML=`<div class="lapfo"><div class="lapfej"><button class="vissza" id="vissza" onclick="vonalVissza()" ${ut?'':'disabled'}>↶ Visszavonás${ut?': '+ut.fajta+' −1':''}</button>
-   <button class="estigomb" onclick="esti()">🌙 Esti beírás</button><button class="estigomb" style="background:#fde7ee;border-color:#e08aa5;color:#7a1f3d" onclick="lapSzam('Foodora rendelés','osszeg')">Foodora Ft: ${O['Foodora rendelés']!=null?ft(O['Foodora rendelés']):'beírom'}</button><button class="estigomb" style="background:#e8f5ea;border-color:#8fc59a;color:#1f5a2c" onclick="lapSzam('Munch csomag','osszeg')">Munch Ft: ${O['Munch csomag']!=null?ft(O['Munch csomag']):'beírom'}</button><span class="muted" style="font-size:13px">1 koppintás = 1 darab</span></div><div class="lapg">${h||'<p class="muted">A fajták listája nem töltődött be – frissíts (↻).</p>'}</div></div>`;}
+   <button class="estigomb" onclick="esti()">🌙 Esti beírás</button><span class="muted" style="font-size:13px">1 koppintás = 1 darab</span></div><div class="lapg">${h||'<p class="muted">A fajták listája nem töltődött be – frissíts (↻).</p>'}</div></div>`;}
 
 // ---- „Mikor fogyott el?” (a heti papírlap helyett, 2026-10-18) ----------------------------------------------
 async function kifAdat(){const m={};(await all('kifogy')).filter(x=>napja(x.ido)===ma()).forEach(x=>{m[x.termek]=x;});return m;}
