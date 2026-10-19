@@ -11,7 +11,8 @@
 <title>Zsömle bolt</title>
 <style>
 :root{--bg:#f6f3ee;--card:#fff;--ink:#2b2118;--muted:#7a6d60;--brand:#8a4b1e;--ok:#2f7d32;--warn:#b3261e;--line:#e4ddd3}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
 body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);height:100vh;height:100dvh;overflow:hidden}
 button{font:inherit;border:0;border-radius:12px;cursor:pointer}
 .top{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--brand);color:#fff}
@@ -149,7 +150,7 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='29'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='30'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
