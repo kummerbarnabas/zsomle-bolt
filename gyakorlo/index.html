@@ -157,7 +157,7 @@ async function fuggo(){if(GYAKORLO)return 0;let n=0;for(const s of ['eladas','su
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='32'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='33'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -318,12 +318,12 @@ async function lapSzam(fajta,tipus){const {M,O}=await lapAdat();const eddig=tipu
 async function esti(){estiNyitva=true;const {E,M,O}=await lapAdat();document.querySelectorAll('.modal.esti').forEach(x=>x.remove());
   const m=document.createElement('div');m.className='modal esti';
   m.innerHTML=`<div class="dlg" style="width:min(560px,96vw);max-height:92vh;overflow-y:auto"><h3>Esti beírás</h3>
-   ${FAJTAK.filter(g=>g.maradek||g.osszeg).map(g=>`<div class="lcs">${g.nev}</div>`+g.fajtak.map(f=>{const i=LAPF.indexOf(f);return `<div class="it"><span class="n">${f}<br><span class="muted">eladva ${E[f]||0} db${g.maradek?' · maradt/kidobva: '+(M[f]!=null?M[f]+' db':'–'):''}${g.osszeg?' · összeg: '+(O[f]!=null?ft(O[f]):'–'):''}</span></span>
+   ${FAJTAK.filter(g=>g.maradek||g.osszeg).map(g=>`<div class="lcs">${g.nev.replace(' és Munch','')}</div>`+g.fajtak.map(f=>{const i=LAPF.indexOf(f);return `<div class="it"><span class="n">${f}<br><span class="muted">eladva ${E[f]||0} db${g.maradek?' · maradt/kidobva: '+(M[f]!=null?M[f]+' db':'–'):''}${g.osszeg?' · összeg: '+(O[f]!=null?ft(O[f]):'–'):''}</span></span>
      <button class="jv" onclick="lapSzam(LAPF[${i}],'${g.osszeg?'osszeg':'maradt'}')">${g.osszeg?'Összeg':'Maradt'}</button></div>`;}).join('')).join('')}
    <div class="row"><button class="prim" data-k="x">Kész</button></div></div>`;
   document.body.appendChild(m);m.onclick=e=>{if(e.target.dataset.k==='x'||e.target===m){estiNyitva=false;m.remove();}};}
 async function lapView(){const {E,V,O}=await lapAdat();const ut=lapUtolso(V);LAPF=[];let h='';
-  FAJTAK.forEach(g=>{const sz=LAP_SZIN[g.nev]||'#888';h+=`<div class="lgc" style="background:${sz}">${g.nev}</div>`;
+  FAJTAK.forEach(g=>{const sz=LAP_SZIN[g.nev]||'#888';h+=`<div class="lgc" style="background:${sz}">${g.nev.replace(' és Munch','')}</div>`;
     g.fajtak.forEach(f=>{const i=LAPF.push(f)-1;const k=fajtaKep(f);
       if(g.osszeg)h+='<div class="par">';
       h+=`<button class="p kis lt" data-i="${i}" style="border-top:4px solid ${sz}" onclick="vonal(LAPF[${i}],1)">${k?`<span class="lk" style="background:#fff url('${k}') center/contain no-repeat"></span>`:''}<span class="db">${E[f]||0}</span><span class="n">${f}</span></button>`;
