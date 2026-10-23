@@ -1,6 +1,6 @@
 // Internet nélküli működés: a program fájljait gyorsítótárba teszi.
 // Mindig a hálózatot kérdezi először, a böngésző HTTP-gyorsítótárát megkerülve (2026-10-17: a tablet régi változatot kapott).
-const C='zsomle-bolt-v34';
+const C='zsomle-bolt-v35';
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(['./','index.html','termekek.json','fajtak.json','kifogyas.json','logo-foodora.png','logo-munch.png','manifest.json','apple-touch-icon.png'])));});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{

@@ -43,19 +43,15 @@
   "ar": 1190,
   "csoport": "Szendvics"
  },
- "Körözöttes kifli": {
-  "ar": 650,
-  "csoport": "Szendvics"
- },
  "Rántott húsos szendvics + Coca-Cola menü": {
   "ar": 1590,
   "csoport": "Szendvics"
  },
- "Foodora rendelés": {
-  "ar": null,
-  "csoport": "Foodora és Munch"
+ "Körözöttes kifli": {
+  "ar": 650,
+  "csoport": "Termékek"
  },
- "Munch csomag": {
+ "Foodora rendelés": {
   "ar": null,
   "csoport": "Foodora és Munch"
  },
@@ -118,9 +114,5 @@
  "+ tej": {
   "ar": 100,
   "csoport": "Extrák"
- },
- "Palacsinta": {
-  "ar": null,
-  "csoport": "Egyéb (nem a lapon)"
  }
 }

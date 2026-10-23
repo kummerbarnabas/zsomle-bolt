@@ -151,7 +151,7 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='34'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='35'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -293,7 +293,7 @@ async function fajtakBetolt(){try{const r=await fetch('fajtak.json',{cache:'no-s
   try{return JSON.parse(localStorage.getItem('fajtak')||'[]');}catch(e){return [];}}
 async function lapAdat(){const V=(await all('vonal')).filter(x=>napja(x.ido)===ma()).sort((a,b)=>a.ido.localeCompare(b.ido));
   const E={},M={},O={};V.forEach(x=>{if(x.tipus==='eladva')E[x.fajta]=(E[x.fajta]||0)+(+x.ertek);else if(x.tipus==='maradt')M[x.fajta]=+x.ertek;else if(x.tipus==='osszeg')O[x.fajta]=+x.ertek;});return {E,M,O,V};}
-const LAP_SZIN={'Hot dog':'#d9822b','Hamburger':'#b3261e','Szendvics':'#4c8c3a','Foodora és Munch':'#d61f69','Kávé, tea':'#7a4a2a','Extrák':'#8a8a8a'};
+const LAP_SZIN={'Hot dog':'#d9822b','Hamburger':'#b3261e','Szendvics':'#4c8c3a','Termékek':'#a0522d','Foodora és Munch':'#d61f69','Kávé, tea':'#7a4a2a','Extrák':'#8a8a8a'};
 let LAPF=[],estiNyitva=false;
 // Koppintás: csak az adott csempe száma frissül helyben (nincs újrarajzolás, nincs felugró felirat, nem ugrik a lap).
 async function vonal(fajta,d){const {E}=await lapAdat();if(d<0&&!(E[fajta]>0))return;
