@@ -151,7 +151,7 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='36'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='37'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -390,19 +390,22 @@ async function szamolDlg(tipus,regi){const nyit=tipus==='nyito';const VK='szamol
 // A kassza-számításba a készpénz megy (osszeg); a négy érték a zaras mezőben. Az összevetés csak a tulajdonosi oldalon látszik.
 async function zarasDlg(regi){
   if(!regi)regi=(await all('penz')).filter(x=>x.tipus==='penztargep'&&napja(x.ido)===ma()&&!(+x.osszeg===0&&x.javitva)).sort((a,b)=>b.ido.localeCompare(a.ido))[0]||null;
-  const z=regi&&regi.zaras||(regi?{keszpenz:+regi.osszeg}:{});
-  const MEZO=[['forgalom','Forgalom összesen','Ft'],['keszpenz','Készpénz','Ft'],['kartya','Bankkártya','Ft'],['vevo','Vevőszám','db']];
+  const z=regi&&regi.zaras||{};
+  // A mezők a szalag soraival egyeznek (2026-10-23): a „Készpénz” a Pénztár jelentés alján a fiókban lévő pénz, NEM a készpénzes eladás;
+  // a készpénzes eladást a program számolja (napi forgalom − bankkártya).
+  const MEZO=[['forgalom','Napi forgalom','Ft','Z-zárás / Pénztár jelentés, „NAPI FORGALOM”'],['kartya','Bankkártya','Ft','Pénztár jelentés alja, „BANKKÁRTYA”'],
+    ['fiok','Készpénz a fiókban','Ft','Pénztár jelentés alja, „KÉSZPÉNZ”'],['vevo','Nyugták száma','db','Z-zárás, „NYUGTÁK SZÁMA”']];
   const m=document.createElement('div');m.className='modal';
   m.innerHTML=`<div class="dlg" style="width:min(520px,94vw)"><h3>Pénztárgép zárás – a Z-szalagról</h3>
-   <table style="width:100%;font-size:18px">${MEZO.map(([k,n,e])=>`<tr><td style="padding:6px">${n}</td><td style="text-align:right"><input data-k="${k}" type="number" inputmode="numeric" min="0" value="${z[k]??''}" placeholder="0" style="width:150px;font-size:20px;padding:8px;text-align:right"> ${e}</td></tr>`).join('')}</table>
+   <table style="width:100%;font-size:18px">${MEZO.map(([k,n,e,s])=>`<tr><td style="padding:6px">${n}<br><span class="muted" style="font-size:12px">${s}</span></td><td style="text-align:right"><input data-k="${k}" type="number" inputmode="numeric" min="0" value="${z[k]??''}" placeholder="0" style="width:150px;font-size:20px;padding:8px;text-align:right"> ${e}</td></tr>`).join('')}</table>
    <p class="muted" id="zossz" style="text-align:right"></p>
    <div class="row"><button data-g="x">Mégse</button><button class="prim" data-g="ok">Mentés</button></div></div>`;
   document.body.appendChild(m);
   const ert=()=>{const o={};m.querySelectorAll('input[data-k]').forEach(i=>{o[i.dataset.k]=Math.max(0,Math.round(+i.value||0));});return o;};
-  const ossz=()=>{const o=ert();m.querySelector('#zossz').textContent='Készpénz + bankkártya: '+ft(o.keszpenz+o.kartya);};
+  const ossz=()=>{const o=ert();m.querySelector('#zossz').textContent='Készpénzes eladás (napi forgalom − bankkártya): '+ft(Math.max(0,o.forgalom-o.kartya));};
   m.addEventListener('input',ossz);ossz();setTimeout(()=>{const i=m.querySelector('input');if(i&&!regi)i.focus();},50);
   m.onclick=async e=>{const g=e.target.dataset.g;if(!g)return;if(g==='x'){m.remove();return;}
-    const o=ert();if(!o.forgalom&&!o.keszpenz&&!o.kartya){toast('Írd be a Z-szalag adatait');return;}m.remove();
+    const o=ert();if(!o.forgalom){toast('Írd be a napi forgalmat');return;}o.keszpenz=Math.max(0,o.forgalom-o.kartya);m.remove();
     if(regi&&regi.id){await put('penz',{...regi,osszeg:o.keszpenz,zaras:o,megjegyzes:'Z-szalag',eredeti_osszeg:regi.eredeti_osszeg??regi.osszeg,javitva:nowISO(),javito:user.nev,szinkron:false});}
     else{await put('penz',{id:uid(),ido:nowISO(),dolgozo:user.nev,tipus:'penztargep',osszeg:o.keszpenz,zaras:o,megjegyzes:'Z-szalag',szinkron:false});}
     toast('Pénztárgép zárás mentve');penzView();szinkron();};}
@@ -425,7 +428,7 @@ async function penzView(){
   const kassza=kp+Object.entries(PT).reduce((a,[k,v])=>a+v[1]*S[k],0), szef=Object.entries(PT).reduce((a,[k,v])=>a+v[2]*S[k],0);
   $('#main').innerHTML=`<div class="sale"><div class="left" style="overflow-y:auto">
    <div class="muted" style="padding:10px">Koppints a tételre, írd be az összeget. A vásárlásnál és a kivétnél írd mellé, mire ment.</div>
-   <div class="grid" style="flex:none;padding-bottom:10px">${Object.entries(PT).map(([k,[n,e,f]])=>`<button class="p kis" onclick="penzUj('${k}')"><span class="n" style="font-size:18px;font-weight:600">${n}</span><span class="muted">${k==='nyito'||k==='zaro'?'címletenként számolva':k==='penztargep'?'forgalom, készpénz, kártya, vevőszám':[e>0?'+ kassza':e<0?'− kassza':'',f>0?'+ széf':f<0?'− széf':''].filter(Boolean).join(', ')}</span></button>`).join('')}</div>
+   <div class="grid" style="flex:none;padding-bottom:10px">${Object.entries(PT).map(([k,[n,e,f]])=>`<button class="p kis" onclick="penzUj('${k}')"><span class="n" style="font-size:18px;font-weight:600">${n}</span><span class="muted">${k==='nyito'||k==='zaro'?'címletenként számolva':k==='penztargep'?'napi forgalom, kártya, fiók, nyugták':[e>0?'+ kassza':e<0?'− kassza':'',f>0?'+ széf':f<0?'− széf':''].filter(Boolean).join(', ')}</span></button>`).join('')}</div>
    <div class="box" style="margin:10px"><h3>Mai összesítő</h3><table>
     <tr><th>Tétel</th><th style="text-align:right">Kassza</th><th style="text-align:right">Széf</th></tr>
     ${Object.entries(PT).filter(([k])=>k!=='zaro').map(([k,[n,e,f]])=>`<tr><td>${k==='nyito'&&autoNyito?n+' (előző zárásból, '+napja(elozo.ido)+')':n}</td><td style="text-align:right">${e?(e>0?'+ ':'− ')+ft(S[k]):''}</td><td style="text-align:right">${f?(f>0?'+ ':'− ')+ft(S[k]):''}</td></tr>`).join('')}
@@ -434,9 +437,9 @@ async function penzView(){
     ${S.zaro?`<tr><td><b>Záráskor számolt</b></td><td style="text-align:right"><b>${ft(S.zaro)}</b></td><td></td></tr>
     ${user.tulaj?`<tr><td><b>Eltérés</b></td><td style="text-align:right;color:${S.zaro-kassza===0?'#2e7d32':'#c0392b'}"><b>${S.zaro-kassza===0?'egyezik':(S.zaro-kassza>0?'többlet + ':'hiány − ')+ft(Math.abs(S.zaro-kassza))}</b></td><td></td></tr>`:''}`:''}
     <tr><td><b>Széf mai változása</b></td><td></td><td style="text-align:right"><b>${szef>=0?'+ ':'− '}${ft(Math.abs(szef))}</b></td></tr></table>
-    <p class="muted">Záráskor a „Pénztárgép zárás” csempén írd be a Z-szalagról a forgalmat, a készpénzt, a bankkártyát és a vevőszámot, utána számold meg a kasszát (Záró egyenleg).</p>
+    <p class="muted">Záráskor a „Pénztárgép zárás” csempén írd be a szalagról a napi forgalmat, a bankkártyát, a fiókban lévő készpénzt és a nyugták számát, utána számold meg a kasszát (Záró egyenleg).</p>
     ${!S.nyito?`<p style="color:#c0392b">Nincs nyitó egyenleg és előző zárás sem – ${user.tulaj?'nélküle a várható egyenleg nem pontos.':'nyitáskor számold meg a kasszát (Nyitó egyenleg).'}</p>`:''}</div></div>
-   <div class="cart"><h2>Mai pénzmozgás</h2><div class="items">${P.map(x=>`<div class="it"${+x.osszeg===0&&x.javitva?' style="opacity:.5"':''}><span class="n">${(PT[x.tipus]||[x.tipus])[0]}: ${+x.osszeg===0&&x.javitva?'törölve':ft(x.osszeg)}<br><span class="muted">${new Date(x.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${x.dolgozo}${x.zaras?' · forgalom '+ft(x.zaras.forgalom||0)+', kártya '+ft(x.zaras.kartya||0)+', vevő '+(x.zaras.vevo||0):''}${x.cimletek&&Object.keys(x.cimletek).length?' · '+Object.entries(x.cimletek).filter(([c])=>c!=='fiok').sort((a,b)=>b[0]-a[0]).map(([c,d])=>d+'×'+(+c).toLocaleString('hu-HU')).concat(x.cimletek.fiok?['fiók '+ft(x.cimletek.fiok)]:[]).join(', '):(x.megjegyzes?' · '+x.megjegyzes:'')}${x.javitva?` · javítva (eredetileg ${ft(x.eredeti_osszeg)}, ${x.javito})`:''}</span></span><button class="jv" onclick="penzJavit('${x.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;}
+   <div class="cart"><h2>Mai pénzmozgás</h2><div class="items">${P.map(x=>`<div class="it"${+x.osszeg===0&&x.javitva?' style="opacity:.5"':''}><span class="n">${(PT[x.tipus]||[x.tipus])[0]}: ${+x.osszeg===0&&x.javitva?'törölve':ft(x.osszeg)}<br><span class="muted">${new Date(x.ido).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'})} · ${x.dolgozo}${x.zaras?' · forgalom '+ft(x.zaras.forgalom||0)+', kártya '+ft(x.zaras.kartya||0)+(x.zaras.fiok!=null?', fiók '+ft(x.zaras.fiok):'')+', nyugta '+(x.zaras.vevo||0):''}${x.cimletek&&Object.keys(x.cimletek).length?' · '+Object.entries(x.cimletek).filter(([c])=>c!=='fiok').sort((a,b)=>b[0]-a[0]).map(([c,d])=>d+'×'+(+c).toLocaleString('hu-HU')).concat(x.cimletek.fiok?['fiók '+ft(x.cimletek.fiok)]:[]).join(', '):(x.megjegyzes?' · '+x.megjegyzes:'')}${x.javitva?` · javítva (eredetileg ${ft(x.eredeti_osszeg)}, ${x.javito})`:''}</span></span><button class="jv" onclick="penzJavit('${x.id}')">Javít</button></div>`).join('')||'<p class="muted">Még nincs</p>'}</div></div></div>`;}
 
 // ---- statisztika ----------------------------------------------------------------
 let statNap=ma();

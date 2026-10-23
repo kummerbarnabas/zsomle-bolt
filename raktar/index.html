@@ -57,7 +57,7 @@ tr.ossz td{font-weight:700;border-bottom:0}
 const SB_URL='https://dqttcjxviijeopzbqfqq.supabase.co', SB_KEY='sb_publishable_S4aefwe9JNDz5hunZdHF9Q_iRBRbmvP';
 const FRISSITES_MP=10, TZ='Europe/Budapest', JK='raktar_jelszo';
 // Az oldal változata: a kozzetesz.sh a közzétett példányba írja (itt 'fejlesztes'). Ha kint újabb van, az oldal újratölt.
-const OLDAL_VER='20261023194438';
+const OLDAL_VER='20261023200747';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ft=n=>Math.round(+n||0).toLocaleString('hu-HU')+' Ft';
@@ -155,12 +155,18 @@ const cimletSzov=c=>c?Object.entries(c).filter(([k])=>k!=='fiok').sort((a,b)=>b[
 // Egy nap kassza-összevetése: a lányok pénzmozgása szerinti készpénzes forgalom (záró − nyitó + kifizetések + széfbe − széfből)
 // a Z-szalag készpénzéhez; a Z-szalag a forgalmi Excelhez (C pénztárgép, D bankkártya, Z vevőszám). Pozitív = többlet.
 const TUR=500; // ennyi Ft-on belül egyezőnek vesszük (aprópénz, kerekítés)
-function kasszaNap(P,elozoZaro,X){const S={};P.forEach(p=>{S[p.tipus]=(S[p.tipus]||0)+(+p.osszeg||0);});const g=k=>S[k]||0;
-  const zr=P.filter(p=>p.tipus==='penztargep'&&+p.osszeg>0).slice(-1)[0];const z=zr?(zr.zaras||{keszpenz:+zr.osszeg}):null;
+function kasszaNap(P,elozoZaro,X,ZF){const S={};P.forEach(p=>{S[p.tipus]=(S[p.tipus]||0)+(+p.osszeg||0);});const g=k=>S[k]||0;
+  // A pénztárgép adatai: elsősorban az esti fotóról feldolgozott Z-zárás (ZF), különben a lányok tablet-csempéje.
+  const zr=P.filter(p=>p.tipus==='penztargep'&&+p.osszeg>0).slice(-1)[0];const tile=zr?(zr.zaras||{keszpenz:+zr.osszeg}):null;
+  const zs=ZF&&ZF.szamolt;const z=zs?{forgalom:zs.forgalom,kartya:zs.kartya,keszpenz:zs.keszpenzes_eladas,fiok:zs.fiok,vevo:zs.nyugtak,penz_be:zs.penz_be,penz_ki:zs.penz_ki,foto:true}:tile;
   const vanNyito=P.some(p=>p.tipus==='nyito'&&+p.osszeg>0), nyito=vanNyito?g('nyito'):elozoZaro, zaro=P.some(p=>p.tipus==='zaro'&&+p.osszeg>0)?g('zaro'):null;
   const kifiz=g('vasarlas')+g('kivet')+g('szefbe')-g('szefbol');
   const lanyok=zaro!=null&&nyito!=null?zaro-nyito+kifiz:null, kul=lanyok!=null&&z&&z.keszpenz!=null?lanyok-z.keszpenz:null;
-  return {z,nyito,autoNyito:!vanNyito&&nyito!=null,zaro,kifiz,lanyok,kul,X,
+  const d=(a,b)=>a!=null&&b!=null?a-b:null;
+  return {z,tile,foto:!!zs,nyito,autoNyito:!vanNyito&&nyito!=null,zaro,kifiz,lanyok,kul,X,
+    zaroFiok:zs?d(zaro,zs.fiok):null, penzBe:zs?d(zs.penz_be,nyito):null, penzKi:zs?d(zs.penz_ki,kifiz):null,
+    // a lányok csempéje a fotóhoz mérve (ellenőrzés)
+    tileOk:zs&&tile&&tile.forgalom!=null?{forgalom:d(tile.forgalom,zs.forgalom),kartya:d(tile.kartya,zs.kartya),fiok:d(tile.fiok,zs.fiok),vevo:d(tile.vevo,zs.nyugtak)}:null,
     xForg:X&&z&&z.forgalom!=null&&X.penztargep!=null?z.forgalom-X.penztargep:null,
     xKartya:X&&z&&z.kartya!=null&&X.kartya!=null?z.kartya-X.kartya:null,
     xVevo:X&&z&&z.vevo!=null&&X.vevo!=null?z.vevo-X.vevo:null};}
@@ -227,17 +233,20 @@ function rajzol(){
     <tr class="ossz"><td>Várható kassza</td><td class="sz">${ft(R.kassza)}</td><td class="sz">${R.szef==null?'':ft(R.szef)}</td></tr>
     ${P.zaro?`<tr><td>Záráskor számolt</td><td class="sz">${ft(P.zaro)}</td><td></td></tr><tr class="ossz"><td>Eltérés</td><td class="sz ${elteres===0?'jo':'rossz'}">${elteres===0?'egyezik':(elteres>0?'többlet + ':'hiány − ')+ft(Math.abs(elteres))}</td><td></td></tr>`:''}
     </table>${!A.penz.some(p=>p.tipus==='penztargep')?'<p class="megj">A pénztárgép napi készpénze záráskor kerül be; addig a várható kassza nem tartalmazza a napi bevételt.</p>':''}
-    ${(()=>{const XN0=A.excel_honap.find(x=>x['Dátum']===nap);const K=kasszaNap(A.penz,A.elozo_zaro?+A.elozo_zaro.osszeg:null,XN0?{penztargep:XN0['Készpénz bevétel'],kartya:XN0['Bankkártyás bevétel'],vevo:XN0['Vevőszám']}:null);
-      if(!K.z)return '<p class="megj">Pénztárgép-zárás (Z-szalag) erre a napra még nincs beírva.</p>';
-      return `<h2 style="margin-top:14px">Pénztárgép-zárás és összevetés</h2><table>
-        <tr><td>Z-szalag: forgalom</td><td class="sz">${K.z.forgalom!=null?ft(K.z.forgalom):'–'}</td></tr>
-        <tr><td>Z-szalag: készpénz</td><td class="sz">${ft(K.z.keszpenz)}</td></tr>
-        <tr><td>Z-szalag: bankkártya</td><td class="sz">${K.z.kartya!=null?ft(K.z.kartya):'–'}</td></tr>
-        <tr><td>Z-szalag: vevőszám</td><td class="sz">${K.z.vevo!=null?db(K.z.vevo):'–'}</td></tr>
-        ${K.z.forgalom!=null&&K.z.kartya!=null?`<tr><td>Készpénz + kártya − forgalom (a szalagon belül)</td><td class="sz">${elterSzov(K.z.keszpenz+K.z.kartya-K.z.forgalom)}</td></tr>`:''}
+    ${(()=>{const XN0=A.excel_honap.find(x=>x['Dátum']===nap);const K=kasszaNap(A.penz,A.elozo_zaro?+A.elozo_zaro.osszeg:null,XN0?{penztargep:XN0['Készpénz bevétel'],kartya:XN0['Bankkártyás bevétel'],vevo:XN0['Vevőszám']}:null,A.z_zaras);
+      if(!K.z)return '<p class="megj">Pénztárgép-zárás erre a napra még nincs (sem a lányok csempéjén, sem az esti fotóról).</p>';
+      const sor=(n,v)=>`<tr><td>${n}</td><td class="sz">${v}</td></tr>`;
+      return `<h2 style="margin-top:14px">Pénztárgép-zárás és összevetés <span class="ures" style="font-weight:400;font-size:13px">(${K.foto?'az esti fotóról':'a lányok beírása alapján'})</span></h2><table>
+        ${sor('Napi forgalom',K.z.forgalom!=null?ft(K.z.forgalom):'–')}${sor('ebből bankkártya',K.z.kartya!=null?ft(K.z.kartya):'–')}${sor('ebből készpénzes eladás',ft(K.z.keszpenz))}
+        ${sor('Nyugták száma',K.z.vevo!=null?db(K.z.vevo):'–')}${K.z.fiok!=null?sor('Készpénz a fiókban a pénztárgép szerint',ft(K.z.fiok)):''}
+        ${K.foto?sor('Pénz be / pénz ki a pénztárgépen',ft(K.z.penz_be)+' / '+ft(K.z.penz_ki)):''}
         <tr><td>A lányok pénzmozgása szerint a készpénzes forgalom<br><span class="ures">záró − nyitó + vásárlás, kivét, széfbe − széfből</span></td><td class="sz">${K.lanyok!=null?ft(K.lanyok):'– (nincs záró vagy nyitó)'}</td></tr>
-        <tr class="ossz"><td>Különbség a Z-szalag készpénzéhez</td><td class="sz">${elterSzov(K.kul)}</td></tr>
-        ${K.X?`<tr><td>Z forgalom − Excel pénztárgép (C)</td><td class="sz">${elterSzov(K.xForg)}</td></tr><tr><td>Z kártya − Excel bankkártya (D)</td><td class="sz">${elterSzov(K.xKartya)}</td></tr><tr><td>Z vevőszám − Excel vevőszám</td><td class="sz">${K.xVevo==null?'–':K.xVevo===0?'<span class="jo">egyezik</span>':'<b class="rossz">'+(K.xVevo>0?'+':'')+K.xVevo+'</b>'}</td></tr>`:''}
+        <tr class="ossz"><td>Különbség a pénztárgép készpénzes eladásához</td><td class="sz">${elterSzov(K.kul)}</td></tr>
+        ${K.foto?`<tr class="ossz"><td>Megszámolt záró − pénztárgép szerinti fiók</td><td class="sz">${elterSzov(K.zaroFiok)}</td></tr>
+          <tr><td>Pénztárgép pénz be − tablet nyitó</td><td class="sz">${elterSzov(K.penzBe)}</td></tr>
+          <tr><td>Pénztárgép pénz ki − tablet kassza-kivétek</td><td class="sz">${elterSzov(K.penzKi)}</td></tr>`:''}
+        ${K.tileOk?`<tr><td>A lányok csempéje − fotó<br><span class="ures">forgalom / kártya / fiók / nyugta</span></td><td class="sz">${['forgalom','kartya','fiok'].map(k=>K.tileOk[k]==null?'–':K.tileOk[k]===0?'✓':(K.tileOk[k]>0?'+':'−')+ft(Math.abs(K.tileOk[k]))).join(' / ')} / ${K.tileOk.vevo==null?'–':K.tileOk.vevo===0?'✓':K.tileOk.vevo}</td></tr>`:K.foto?sor('A lányok csempéje','– (nem írták be)'):''}
+        ${K.X?`<tr><td>Pénztárgép forgalom − Excel C</td><td class="sz">${elterSzov(K.xForg)}</td></tr><tr><td>Pénztárgép kártya − Excel D</td><td class="sz">${elterSzov(K.xKartya)}</td></tr><tr><td>Nyugták − Excel vevőszám</td><td class="sz">${K.xVevo==null?'–':K.xVevo===0?'<span class="jo">egyezik</span>':'<b class="rossz">'+(K.xVevo>0?'+':'')+K.xVevo+'</b>'}</td></tr>`:''}
         </table>`;})()}
     ${A.penz.length?`<h2 style="margin-top:14px">Tételesen</h2><table>${A.penz.map(p=>`<tr${+p.osszeg===0&&p.javitva?' class="halv"':''}><td>${idopont(p.ido)}</td><td>${esc((PT[p.tipus]||[p.tipus])[0])}${p.megjegyzes&&p.megjegyzes!=='címletes számolás'?'<br><span class="ures">'+esc(p.megjegyzes)+'</span>':''}${p.cimletek&&Object.keys(p.cimletek).length?'<br><span class="ures">'+esc(cimletSzov(p.cimletek))+'</span>':''}</td><td class="sz">${+p.osszeg===0&&p.javitva?'törölve':ft(p.osszeg)}</td><td>${esc(p.dolgozo)}${javSzov(p,p.eredeti_osszeg!=null?ft(p.eredeti_osszeg):null)}</td></tr>`).join('')}</table>`:''}</div>`;
   // Beérkezés termékenként (a beszerzési munkafüzet Napi beszerzés lapjából, esti körben feltöltve). Pékárunál (Váradi, K&A)
@@ -287,10 +296,16 @@ function rajzol(){
   // A 2026-os lap napi termékdarabszám-oszlopai (fejléc → felirat), a Termékek lap sorrendjében.
   const TERMEK_OSZL=[['RántottH','Rántott húsos'],['zsömlesSZ','Sonkás/szalámis'],['hotdog','Hot dog'],['hamburger','Hamburger'],['körözöttes kifli','Körözöttes kifli'],
     ['kávé','Kávé'],['tea','Tea'],['forró csoki','Forró csoki'],['palacsinta','Palacsinta'],['rántott sajt','Rántott sajt'],['Foodora (db)','Foodora (rendelés)'],['Munch (db)','Munch (csomag)']];
-  const besz=XN?Object.entries(XN).filter(([k,v])=>!NEM_BESZ.has(k)&&!k.includes('(tájékoztató)')&&typeof v==='number'&&v).sort((a,b)=>b[1]-a[1]):[];
+  const besz=XN?Object.entries(XN).filter(([k,v])=>!NEM_BESZ.has(k)&&!/\((tájékoztató|Z-zárás|Teya)\)$/.test(k)&&typeof v==='number'&&v).sort((a,b)=>b[1]-a[1]):[];
+  // A Z-zárás és Teya oszlopok az Excel sorrendjében (a jsonb nem őrzi meg a sorrendet).
+  const ZREND=['Zárás sorszáma','Forgalom 5% ÁFA','Forgalom 18% ÁFA','Forgalom 27% ÁFA','Forgalom ÁFA-mentes, TAM','Nyugták száma','Sztornó és visszáru','Pénz be','Pénz ki',
+    'Fiók készpénz a pénztárgép szerint','Megszámolt záró − pénztárgép fiók','SZÉP/EP kártya','Bankkártya','Kártyás fizetések száma'];
+  const zr=k=>{const i=ZREND.indexOf(k.replace(/ \((Z-zárás|Teya)\)$/,''));return i<0?99:i;};
+  const ZOSZL=XN?Object.entries(XN).filter(([k])=>/\((Z-zárás|Teya)\)$/.test(k)).sort((a,b)=>zr(a[0])-zr(b[0])):[];
   const napX=XN?`<div class="racs" style="gap:10px"><table><tr><th>Bevétel</th><th class="sz"></th></tr>
       ${BEV.filter(([k])=>XN[k]).map(([k,n])=>`<tr><td>${n}</td><td class="sz">${xft(XN[k])}</td></tr>`).join('')}
-      <tr class="ossz"><td>Bevétel összesen</td><td class="sz">${xft(XN['Bevétel összesen'])}</td></tr></table>
+      <tr class="ossz"><td>Bevétel összesen</td><td class="sz">${xft(XN['Bevétel összesen'])}</td></tr>
+      ${ZOSZL.length?`<tr><th colspan="2">A pénztárgép zárása és a kártyaterminálok</th></tr>${ZOSZL.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="sz">${/sorszáma|száma|Nyugták/.test(k)?db(v):xft(v)}</td></tr>`).join('')}`:''}</table>
     <table><tr><th>Költség</th><th class="sz"></th></tr>
       ${KOLT.filter(([k])=>XN[k]).map(([k,n])=>`<tr><td>${n}</td><td class="sz">${xft(XN[k])}</td></tr>`).join('')}
       ${besz.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="sz">${xft(v)}</td></tr>`).join('')}
@@ -323,12 +338,15 @@ function rajzol(){
   // Kassza-ellenőrzés: a hónap napjai és kiértékelés (csak a tulajdonosi oldalon)
   let kasszaBox='';
   if(kassza){const PN={};kassza.penz.forEach(p=>(PN[p.nap]=PN[p.nap]||[]).push(p));const XM={};kassza.excel.forEach(x=>XM[x.nap]=x);
+    const ZM={};(kassza.z||[]).forEach(z=>ZM[z.nap]=z);Object.keys(ZM).forEach(n=>{if(!PN[n])PN[n]=[];});
     let lz=kassza.elozo_zaro!=null?+kassza.elozo_zaro:null;const napok=[];
-    Object.keys(PN).sort().forEach(n=>{const K=kasszaNap(PN[n],lz,XM[n]);napok.push({n,...K});if(K.zaro!=null)lz=K.zaro;});
+    Object.keys(PN).sort().forEach(n=>{const K=kasszaNap(PN[n],lz,XM[n],ZM[n]);napok.push({n,...K});if(K.zaro!=null)lz=K.zaro;});
     const teljes=napok.filter(x=>x.kul!=null), egy=teljes.filter(x=>Math.abs(x.kul)<=TUR), hiany=teljes.filter(x=>x.kul<-TUR), tobb=teljes.filter(x=>x.kul>TUR);
     const szum=teljes.reduce((s,x)=>s+x.kul,0), legr=hiany.slice().sort((a,b)=>a.kul-b.kul)[0];
     const nincsZ=napok.filter(x=>!x.z), nincsZaro=napok.filter(x=>x.zaro==null), nincsNyito=napok.filter(x=>x.nyito==null);
     const xElt=napok.filter(x=>x.xForg!=null&&Math.abs(x.xForg)>TUR);
+    const fotoN=napok.filter(x=>x.foto), fiokOk=fotoN.filter(x=>x.zaroFiok!=null&&Math.abs(x.zaroFiok)<=TUR);
+    const tileN=fotoN.filter(x=>x.tileOk), tileJo=tileN.filter(x=>['forgalom','kartya','fiok','vevo'].every(k=>!x.tileOk[k]));
     const pont=[];
     if(teljes.length)pont.push(`${teljes.length} teljes napból (nyitó, Z-szalag és záró is van) <b>${egy.length}</b> egyezett ±${ft(TUR)}-on belül, <b>${hiany.length}</b> napon hiány, <b>${tobb.length}</b> napon többlet volt.`);
     if(teljes.length)pont.push(`A különbségek összege: ${elterSzov(szum).replace('egyezik','közel nulla')}${teljes.length>1?`, átlagosan ${ft(Math.abs(szum/teljes.length))} naponta (${szum<0?'hiány':'többlet'})`:''}.`);
@@ -338,12 +356,15 @@ function rajzol(){
     if(nincsZaro.length)pont.push(`Záró számolás nincs: ${nincsZaro.map(x=>napNev(x.n)).join(', ')}.`);
     if(nincsNyito.length)pont.push(`Nyitó egyenleg nincs (és előző záró sem): ${nincsNyito.map(x=>napNev(x.n)).join(', ')}.`);
     if(xElt.length)pont.push(`A Z-szalag forgalma eltér az Excel pénztárgép-oszlopától: ${xElt.map(x=>napNev(x.n)+' ('+(x.xForg>0?'+':'−')+ft(Math.abs(x.xForg))+')').join(', ')}.`);
+    if(fotoN.length)pont.push(`Esti fotó (Z-zárás) ${fotoN.length} napról: a megszámolt záró ${fiokOk.length} napon egyezett a pénztárgép szerinti fiókkal${fotoN.filter(x=>x.zaroFiok!=null&&Math.abs(x.zaroFiok)>TUR).map(x=>'; '+napNev(x.n)+': '+elterSzov(x.zaroFiok)).join('')}.`);
+    fotoN.filter(x=>x.penzBe&&Math.abs(x.penzBe)>TUR||x.penzKi&&Math.abs(x.penzKi)>TUR).forEach(x=>pont.push(`${napNev(x.n)}: a pénztárgépbe más került, mint a tabletre – pénz be ${elterSzov(x.penzBe)}, pénz ki ${elterSzov(x.penzKi)} (a nyitó vagy egy kivét csak az egyik helyen szerepel).`));
+    if(tileN.length)pont.push(`A lányok csempéje ${tileN.length} napból ${tileJo.length} napon egyezett a fotóval.`);
     if(!pont.length)pont.push('Ebben a hónapban még nincs kiértékelhető nap.');
     kasszaBox=`<div class="box szeles" id="kassza"><h2>Kassza-ellenőrzés – ${new Date(nap+'T12:00:00').toLocaleDateString('hu-HU',{year:'numeric',month:'long'})}</h2>
       <ul style="margin:0 0 10px;padding-left:18px">${pont.map(x=>`<li style="margin:3px 0">${x}</li>`).join('')}</ul>
-      <table><tr><th>Nap</th><th class="sz">Nyitó</th><th class="sz">Z forgalom</th><th class="sz">Z készpénz</th><th class="sz">Z kártya</th><th class="sz">Z vevő</th><th class="sz">Kifizetések</th><th class="sz">Záró</th><th class="sz">Lányok szerint kp.</th><th class="sz">Különbség</th><th class="sz">Z − Excel C</th></tr>
-      ${napok.slice().reverse().map(x=>`<tr${x.n===nap?' style="background:var(--bg)"':''}><td>${napNev(x.n)}</td><td class="sz">${x.nyito!=null?ft(x.nyito)+(x.autoNyito?'*':''):'–'}</td><td class="sz">${x.z&&x.z.forgalom!=null?ft(x.z.forgalom):'–'}</td><td class="sz">${x.z?ft(x.z.keszpenz):'–'}</td><td class="sz">${x.z&&x.z.kartya!=null?ft(x.z.kartya):'–'}</td><td class="sz">${x.z&&x.z.vevo!=null?db(x.z.vevo):'–'}</td><td class="sz">${ft(x.kifiz)}</td><td class="sz">${x.zaro!=null?ft(x.zaro):'–'}</td><td class="sz">${x.lanyok!=null?ft(x.lanyok):'–'}</td><td class="sz">${elterSzov(x.kul)}</td><td class="sz">${x.xForg==null?'–':elterSzov(x.xForg)}</td></tr>`).join('')}</table>
-      <p class="megj">Különbség = a lányok pénzmozgása szerinti készpénzes forgalom (záró − nyitó + vásárlás, kivét, széfbe − széfből) − a Z-szalag készpénze; pozitív = többlet a kasszában, negatív = hiány. ±${ft(TUR)} egyezésnek számít. * = nincs nyitó számolás, az előző záró a nyitó. A korábbi napokon a Z-szalag helyett a forgalmi Excelből beírt pénztárgép-készpénz szerepel (forgalom, kártya, vevőszám nélkül). Ezt csak a tulajdonosi oldal mutatja, a tableten a lányok nem látják.</p></div>`;}
+      <table><tr><th>Nap</th><th class="sz">Nyitó</th><th class="sz">Z forgalom</th><th class="sz">Z készpénz</th><th class="sz">Z kártya</th><th class="sz">Z vevő</th><th class="sz">Kifizetések</th><th class="sz">Záró</th><th class="sz">Lányok szerint kp.</th><th class="sz">Különbség</th><th class="sz">Záró − fiók</th><th class="sz">Z − Excel C</th></tr>
+      ${napok.slice().reverse().map(x=>`<tr${x.n===nap?' style="background:var(--bg)"':''}><td>${napNev(x.n)}${x.foto?' 📷':''}</td><td class="sz">${x.nyito!=null?ft(x.nyito)+(x.autoNyito?'*':''):'–'}</td><td class="sz">${x.z&&x.z.forgalom!=null?ft(x.z.forgalom):'–'}</td><td class="sz">${x.z?ft(x.z.keszpenz):'–'}</td><td class="sz">${x.z&&x.z.kartya!=null?ft(x.z.kartya):'–'}</td><td class="sz">${x.z&&x.z.vevo!=null?db(x.z.vevo):'–'}</td><td class="sz">${ft(x.kifiz)}</td><td class="sz">${x.zaro!=null?ft(x.zaro):'–'}</td><td class="sz">${x.lanyok!=null?ft(x.lanyok):'–'}</td><td class="sz">${elterSzov(x.kul)}</td><td class="sz">${x.zaroFiok==null?'–':elterSzov(x.zaroFiok)}</td><td class="sz">${x.xForg==null?'–':elterSzov(x.xForg)}</td></tr>`).join('')}</table>
+      <p class="megj">Különbség = a lányok pénzmozgása szerinti készpénzes forgalom (záró − nyitó + vásárlás, kivét, széfbe − széfből) − a Z-szalag készpénze; pozitív = többlet a kasszában, negatív = hiány. ±${ft(TUR)} egyezésnek számít. * = nincs nyitó számolás, az előző záró a nyitó. 📷 = az esti fotóról feldolgozott Z-zárás (pontos pénztárgép-adat); a többi napon a lányok csempéje, régebben a forgalmi Excelből beírt pénztárgép-készpénz. „Záró − fiók”: a megszámolt záró a pénztárgép szerinti fiókhoz képest. Ezt csak a tulajdonosi oldal mutatja, a tableten a lányok nem látják.</p></div>`;}
   // Dolgozónként
   const dl=Object.entries(R.D).sort((a,b)=>b[1].ft-a[1].ft);
   const dolgBox=`<div class="box"><h2>Dolgozónként</h2>${dl.length?`<table><tr><th>Dolgozó</th><th class="sz">Eladás (db)</th><th class="sz">Eladás Ft</th><th class="sz">Sütés (db)</th><th class="sz">Rögzítés</th></tr>
