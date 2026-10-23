@@ -57,7 +57,7 @@ tr.ossz td{font-weight:700;border-bottom:0}
 const SB_URL='https://dqttcjxviijeopzbqfqq.supabase.co', SB_KEY='sb_publishable_S4aefwe9JNDz5hunZdHF9Q_iRBRbmvP';
 const FRISSITES_MP=10, TZ='Europe/Budapest', JK='raktar_jelszo';
 // Az oldal változata: a kozzetesz.sh a közzétett példányba írja (itt 'fejlesztes'). Ha kint újabb van, az oldal újratölt.
-const OLDAL_VER='20261023190527';
+const OLDAL_VER='20261023191224';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ft=n=>Math.round(+n||0).toLocaleString('hu-HU')+' Ft';
@@ -72,7 +72,7 @@ const lepNap=(n,d)=>{const x=new Date(n+'T12:00:00');x.setDate(x.getDate()+d);re
 const PT={nyito:['Nyitó egyenleg',1,0],penztargep:['Pénztárgép készpénz (napi zárás)',1,0],vasarlas:['Vásárlás a kasszából',-1,0],kivet:['Kivét a kasszából',-1,0],
   szefbe:['Széfbe',-1,1],szefbol:['Széfből a kasszába',1,-1],vasarlas_szef:['Vásárlás széfből',0,-1],kivet_szef:['Kivét széfből',0,-1],zaro:['Záró egyenleg (számolt)',0,0]};
 
-let jelszo=null, nap=ma(), adat=null, arak={}, lapCsop=[], termekek={}, idozito=null, utolso=null, hiba=null;
+let jelszo=null, nap=ma(), adat=null, arak={}, lapCsop=[], xTermekek=[], termekek={}, idozito=null, utolso=null, hiba=null;
 try{jelszo=localStorage.getItem(JK)||sessionStorage.getItem(JK);}catch(e){}
 
 async function rpc(fn,body){const r=await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -100,7 +100,7 @@ async function frissit(){clearTimeout(idozito);
   // Csak a mai napot és csak látható lapon frissítjük; más napok adata már nem változik (javítás ritka, kézzel frissíthető).
   if(nap===ma()&&!document.hidden)idozito=setTimeout(frissit,FRISSITES_MP*1000);}
 function napValt(d){nap=d===0?ma():lepNap(nap,d);if(nap>ma())nap=ma();adat=null;rajzol();frissit();}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){ujValtozat();if(jelszo)frissit();}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){ujValtozat();if(jelszo){excelTermekek();frissit();}}});
 // Új változat figyelése (2026-10-23: a böngésző a régi oldalt mutatta): percenként és a lap előtérbe kerülésekor.
 // A verzio.txt-t gyorsítótár nélkül kéri; eltérésnél egyszer újratölt a változatszámmal (a CDN-t is megkerülve).
 async function ujValtozat(){if(OLDAL_VER==='fejlesztes')return;
@@ -259,6 +259,9 @@ function rajzol(){
   const BEV=[['Készpénz bevétel','Pénztárgép (C)'],['Bankkártyás bevétel','ebből bankkártya (tájékoztató)'],['Egyéb terminál (Droid)','Egyéb terminál'],['Foodora (házhozszállítás)','Foodora'],['Munch','Munch']];
   const KOLT=[['Bérköltség','Bér'],['Adó / járulék','Adó, járulék'],['Egyéb költség (korábbi, nem részletezett)','Egyéb (régi)'],['Foodora költség','Foodora költség'],['Munch költség','Munch költség']];
   const NEM_BESZ=new Set(['Dátum','Hónap','Bevétel összesen','Költség összesen','Napi eredmény','Vevőszám','Vázsonyi saját','K&A saját','RántottH','zsömlesSZ','hotdog','hamburger','körözöttes kifli','kávé','tea','forró csoki','palacsinta','rántott sajt','Foodora (db)','Munch (db)',...BEV.map(x=>x[0]),...KOLT.map(x=>x[0])]);
+  // A 2026-os lap napi termékdarabszám-oszlopai (fejléc → felirat), a Termékek lap sorrendjében.
+  const TERMEK_OSZL=[['RántottH','Rántott húsos'],['zsömlesSZ','Sonkás/szalámis'],['hotdog','Hot dog'],['hamburger','Hamburger'],['körözöttes kifli','Körözöttes kifli'],
+    ['kávé','Kávé'],['tea','Tea'],['forró csoki','Forró csoki'],['palacsinta','Palacsinta'],['rántott sajt','Rántott sajt'],['Foodora (db)','Foodora (rendelés)'],['Munch (db)','Munch (csomag)']];
   const besz=XN?Object.entries(XN).filter(([k,v])=>!NEM_BESZ.has(k)&&!k.includes('(tájékoztató)')&&typeof v==='number'&&v).sort((a,b)=>b[1]-a[1]):[];
   const napX=XN?`<div class="racs" style="gap:10px"><table><tr><th>Bevétel</th><th class="sz"></th></tr>
       ${BEV.filter(([k])=>XN[k]).map(([k,n])=>`<tr><td>${n}</td><td class="sz">${xft(XN[k])}</td></tr>`).join('')}
@@ -269,18 +272,27 @@ function rajzol(){
       <tr class="ossz"><td>Költség összesen</td><td class="sz">${xft(XN['Költség összesen'])}</td></tr></table></div>
     <table style="margin-top:8px"><tr class="ossz"><td>Napi eredmény</td><td class="sz ${(XN['Napi eredmény']||0)>=0?'jo':'rossz'}">${xft(XN['Napi eredmény'])}</td></tr>
       ${XN['Vevőszám']?`<tr><td>Vevőszám</td><td class="sz">${db(XN['Vevőszám'])}</td></tr>`:''}
+      ${TERMEK_OSZL.filter(([k])=>XN[k]).map(([k,n])=>`<tr><td>${n} (db)</td><td class="sz">${db(XN[k])}</td></tr>`).join('')}
       ${Object.entries(XN).filter(([k])=>k.includes('(tájékoztató)')&&!/^(Élelmiszer|Csomagoló|Nem élelmiszer|Tisztító|Futár|Betétdíj|Bérleti|Rezsi)/.test(k)).map(([k,v])=>`<tr><td>${esc(k.replace(' (tájékoztató)',''))}</td><td class="sz">${typeof v==='number'?xft(v):esc(v)}</td></tr>`).join('')}</table>`
     :'<p class="ures">Erre a napra nincs sor a forgalmi lapon.</p>';
   const ho=A.excel_honap.filter(x=>x['Bevétel összesen']||x['Költség összesen']);
   const sum=k=>ho.reduce((s,x)=>s+(+x[k]||0),0);
-  const honapX=ho.length?`<table><tr><th>Nap</th><th class="sz">Bevétel</th><th class="sz">Költség</th><th class="sz">Eredmény</th><th class="sz">Vevő</th></tr>
-    ${ho.map(x=>`<tr${x['Dátum']===nap?' style="background:var(--bg)"':''}><td>${napNev(x['Dátum'])}</td><td class="sz">${xft(x['Bevétel összesen'])}</td><td class="sz">${xft(x['Költség összesen'])}</td><td class="sz ${(x['Napi eredmény']||0)>=0?'':'rossz'}">${xft(x['Napi eredmény'])}</td><td class="sz">${x['Vevőszám']?db(x['Vevőszám']):''}</td></tr>`).join('')}
-    <tr class="ossz"><td>Összesen</td><td class="sz">${ft(sum('Bevétel összesen'))}</td><td class="sz">${ft(sum('Költség összesen'))}</td><td class="sz">${ft(sum('Napi eredmény'))}</td><td class="sz">${db(sum('Vevőszám'))}</td></tr></table>`:'<p class="ures">Ebben a hónapban még nincs forgalmi adat.</p>';
+  const hoT=TERMEK_OSZL.filter(([k])=>ho.some(x=>x[k]));
+  const honapX=ho.length?`<table><tr><th>Nap</th><th class="sz">Bevétel</th><th class="sz">Költség</th><th class="sz">Eredmény</th><th class="sz">Vevő</th>${hoT.map(([k,n])=>`<th class="sz">${n}</th>`).join('')}</tr>
+    ${ho.map(x=>`<tr${x['Dátum']===nap?' style="background:var(--bg)"':''}><td>${napNev(x['Dátum'])}</td><td class="sz">${xft(x['Bevétel összesen'])}</td><td class="sz">${xft(x['Költség összesen'])}</td><td class="sz ${(x['Napi eredmény']||0)>=0?'':'rossz'}">${xft(x['Napi eredmény'])}</td><td class="sz">${x['Vevőszám']?db(x['Vevőszám']):''}</td>${hoT.map(([k])=>`<td class="sz">${x[k]?db(x[k]):''}</td>`).join('')}</tr>`).join('')}
+    <tr class="ossz"><td>Összesen</td><td class="sz">${ft(sum('Bevétel összesen'))}</td><td class="sz">${ft(sum('Költség összesen'))}</td><td class="sz">${ft(sum('Napi eredmény'))}</td><td class="sz">${db(sum('Vevőszám'))}</td>${hoT.map(([k])=>`<td class="sz">${db(sum(k))}</td>`).join('')}</tr></table>`:'<p class="ures">Ebben a hónapban még nincs forgalmi adat.</p>';
   const evek=[...new Set(A.excel_havi.flatMap(x=>Object.keys(x)).map(k=>(k.match(/^(\d{4}) Bevétel$/)||[])[1]).filter(Boolean))].sort().reverse();
   const haviX=A.excel_havi.length?`<table><tr><th>Hónap</th>${evek.map(e=>`<th class="sz">${e} bevétel</th><th class="sz">${e} költség</th><th class="sz">${e} eredmény</th>`).join('')}</tr>
     ${A.excel_havi.map(x=>`<tr><td>${esc(x['Hónap'])}</td>${evek.map(e=>`<td class="sz">${x[e+' Bevétel']?xft(x[e+' Bevétel']):''}</td><td class="sz">${x[e+' Költség']?xft(x[e+' Költség']):''}</td><td class="sz">${x[e+' Bevétel']||x[e+' Költség']?xft(x[e+' Eredmény']):''}</td>`).join('')}</tr>`).join('')}</table>`:'';
+  // Termékek havonta (a Termékek lap): csak a forgalmas hónapok és a valaha eladott termékek
+  const tSor=xTermekek.filter(x=>x['Hónap']!=='Éves összesen'&&TERMEK_OSZL.some(([k])=>x[k])), tEv=xTermekek.find(x=>x['Hónap']==='Éves összesen');
+  const tOszl=TERMEK_OSZL.filter(([k])=>tSor.some(x=>x[k]));
+  const termekX=tSor.length?`<table><tr><th>Hónap</th>${tOszl.map(([k,n])=>`<th class="sz">${n}</th>`).join('')}</tr>
+    ${tSor.map(x=>`<tr><td>${esc(x['Hónap'])}</td>${tOszl.map(([k])=>`<td class="sz">${x[k]?db(x[k]):''}</td>`).join('')}</tr>`).join('')}
+    ${tEv?`<tr class="ossz"><td>2026 összesen</td>${tOszl.map(([k])=>`<td class="sz">${tEv[k]?db(tEv[k]):''}</td>`).join('')}</tr>`:''}</table>`:'';
   const excelBox=`<div class="box szeles" id="excel"><h2>Forgalom (Excel) – ${napNev(nap)}</h2>${napX}
     <h2 style="margin-top:14px">A hónap napjai</h2>${honapX}
+    ${termekX?`<h2 style="margin-top:14px">Termékek havonta (db)</h2>${termekX}`:''}
     ${haviX?`<h2 style="margin-top:14px">Havi összesítő</h2>${haviX}`:''}
     <p class="megj">A forgalmi munkafüzetből, az esti körben frissül${A.excel_feltoltve?' (utoljára '+new Date(A.excel_feltoltve).toLocaleString('hu-HU',{timeZone:TZ,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+')':''}. A teljes Excel-fájlok a OneDrive „Zsömle Excel (napi másolat)” mappájában vannak.</p></div>`;
   // Dolgozónként
@@ -293,7 +305,9 @@ function rajzol(){
   $('#app').innerHTML=fej+`<main>${csempek}${nav}<div class="racs">${orasBox}${vonalBox}${beBox}${fornBox}${fkBox}${penzBox}${marBox}${kifBox}${sutBox}${eladBox}${excelBox}${dolgBox}</div></main>`;
   window.scrollTo(0,g);}
 
-async function indit(){adat=null;rajzol();await torzsadat();frissit();}
+// A forgalmi Excel „Termékek” lapja (havi darabszámok): esténként változik, ezért csak belépéskor és előtérbe kerüléskor kérjük le.
+async function excelTermekek(){if(!jelszo)return;try{xTermekek=await rpc('raktar_excel_termekek',{p_jelszo:jelszo});}catch(e){}}
+async function indit(){adat=null;rajzol();await torzsadat();await excelTermekek();frissit();}
 jelszo?indit():belepView();
 </script>
 </body>
