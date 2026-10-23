@@ -1,0 +1,126 @@
+{
+ "Sima hot dog (Klasszik virsli)": {
+  "ar": 890,
+  "csoport": "Hot dog"
+ },
+ "Sajtos virslis hot dog": {
+  "ar": 890,
+  "csoport": "Hot dog"
+ },
+ "XXL csípős grillkolbászos (Magyar XXL)": {
+  "ar": 1290,
+  "csoport": "Hot dog"
+ },
+ "XXL cheddaros grillkolbászos (Cheddar XXL)": {
+  "ar": 1290,
+  "csoport": "Hot dog"
+ },
+ "Hot dog + Coca-Cola menü": {
+  "ar": 1290,
+  "csoport": "Hot dog"
+ },
+ "Sima hamburger": {
+  "ar": 1790,
+  "csoport": "Hamburger"
+ },
+ "Sajtos hamburger": {
+  "ar": 2090,
+  "csoport": "Hamburger"
+ },
+ "Dupla húsos hamburger": {
+  "ar": 2490,
+  "csoport": "Hamburger"
+ },
+ "Sonkás szendvics": {
+  "ar": 990,
+  "csoport": "Szendvics"
+ },
+ "Szalámis szendvics": {
+  "ar": 990,
+  "csoport": "Szendvics"
+ },
+ "Rántott húsos szendvics": {
+  "ar": 1190,
+  "csoport": "Szendvics"
+ },
+ "Körözöttes kifli": {
+  "ar": 650,
+  "csoport": "Szendvics"
+ },
+ "Rántott húsos szendvics + Coca-Cola menü": {
+  "ar": 1590,
+  "csoport": "Szendvics"
+ },
+ "Foodora rendelés": {
+  "ar": null,
+  "csoport": "Foodora és Munch"
+ },
+ "Munch csomag": {
+  "ar": null,
+  "csoport": "Foodora és Munch"
+ },
+ "Eszpresszó": {
+  "ar": 490,
+  "csoport": "Kávé, tea"
+ },
+ "Eszpresszó tejjel": {
+  "ar": 590,
+  "csoport": "Kávé, tea"
+ },
+ "Hosszú kávé": {
+  "ar": 630,
+  "csoport": "Kávé, tea"
+ },
+ "Hosszú kávé tejjel": {
+  "ar": 730,
+  "csoport": "Kávé, tea"
+ },
+ "Dupla eszpresszó": {
+  "ar": 880,
+  "csoport": "Kávé, tea"
+ },
+ "Tejes kávé": {
+  "ar": 700,
+  "csoport": "Kávé, tea"
+ },
+ "Latte Macchiato": {
+  "ar": 790,
+  "csoport": "Kávé, tea"
+ },
+ "Cappuccino": {
+  "ar": 800,
+  "csoport": "Kávé, tea"
+ },
+ "Chocciatto": {
+  "ar": 880,
+  "csoport": "Kávé, tea"
+ },
+ "Forró csoki": {
+  "ar": 890,
+  "csoport": "Kávé, tea"
+ },
+ "Jegeskávé vanília fagyival": {
+  "ar": 1490,
+  "csoport": "Kávé, tea"
+ },
+ "Tea": {
+  "ar": 499,
+  "csoport": "Kávé, tea"
+ },
+ "+ tejszín": {
+  "ar": 100,
+  "csoport": "Extrák"
+ },
+ "+ tejszínhab": {
+  "ar": 100,
+  "csoport": "Extrák"
+ },
+ "+ tej": {
+  "ar": 100,
+  "csoport": "Extrák"
+ },
+ "Palacsinta": {
+  "ar": null,
+  "csoport": "Egyéb (nem a lapon)"
+ }
+}

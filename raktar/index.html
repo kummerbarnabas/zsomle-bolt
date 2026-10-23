@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Zsömle – élő áttekintés</title>
+<!-- Rejtett tulajdonosi oldal (zsomle-pekseg.hu/raktar, 2026-10-23): a tableten rögzített adatok élőben.
+     Az oldal nem tartalmaz adatot; mindent a tulajdonosi jelszóval kér le a raktar_adatok függvénytől. -->
+<style>
+:root{--bg:#f6f3ee;--card:#fff;--ink:#2b2118;--muted:#7a6d60;--brand:#8a4b1e;--bar:#c98a55;--ok:#2f7d32;--warn:#b3261e;--line:#e4ddd3}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1713;--card:#28211b;--ink:#f1e9df;--muted:#b4a594;--brand:#d08a52;--bar:#a8693a;--ok:#6cc070;--warn:#ef7a6f;--line:#3d332a}}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+.top{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 16px;background:var(--brand);color:#fff}
+.top h1{font-size:18px;margin:0;flex:1;min-width:140px}
+.top button{font:inherit;border:0;border-radius:10px;padding:7px 12px;background:rgba(255,255,255,.18);color:#fff;cursor:pointer}
+.top .nap{font-weight:600;min-width:118px;text-align:center}
+.allapot{font-size:13px;opacity:.9;width:100%}
+.allapot .pont{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7CFC9A;margin-right:6px;vertical-align:1px}
+.allapot.hiba .pont{background:#ff9b8f}
+main{max-width:1180px;margin:0 auto;padding:14px 16px 40px}
+.csempek{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.cs{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.cs .c{font-size:13px;color:var(--muted)}
+.cs .e{font-size:24px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.cs .m{font-size:12px;color:var(--muted);margin-top:2px}
+.racs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:14px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0;overflow-x:auto}
+.box h2{font-size:16px;margin:0 0 8px}
+.box p.megj{font-size:12px;color:var(--muted);margin:8px 0 0}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600}
+td.sz,th.sz{text-align:right;white-space:nowrap}
+tr.ossz td{font-weight:700;border-bottom:0}
+.ures{color:var(--muted);font-size:14px}
+.sav{display:flex;align-items:center;gap:6px}
+.sav i{display:block;height:10px;border-radius:0 4px 4px 0;background:var(--bar);min-width:2px}
+.sav span{font-size:13px;min-width:28px;text-align:right}
+.jo{color:var(--ok)}.rossz{color:var(--warn)}
+.halv{opacity:.5}
+.belep{max-width:360px;margin:12vh auto;padding:24px;background:var(--card);border:1px solid var(--line);border-radius:16px}
+.belep h1{font-size:20px;margin:0 0 14px}
+.belep input[type=password]{width:100%;font-size:18px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.belep button{width:100%;margin-top:12px;font:inherit;font-size:17px;padding:12px;border:0;border-radius:10px;background:var(--brand);color:#fff;cursor:pointer}
+.belep label{display:block;margin-top:10px;font-size:14px;color:var(--muted)}
+.belep .hiba{color:var(--warn);margin-top:10px;min-height:20px}
+@media (max-width:420px){main{padding:12px 10px 40px}.racs{grid-template-columns:1fr}.csempek{grid-template-columns:1fr 1fr}.cs .e{font-size:20px}.box{padding:10px}table{font-size:13px}th,td{padding:4px 3px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const SB_URL='https://dqttcjxviijeopzbqfqq.supabase.co', SB_KEY='sb_publishable_S4aefwe9JNDz5hunZdHF9Q_iRBRbmvP';
+const FRISSITES_MP=10, TZ='Europe/Budapest', JK='raktar_jelszo';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ft=n=>Math.round(+n||0).toLocaleString('hu-HU')+' Ft';
+const db=n=>(+n||0).toLocaleString('hu-HU',{maximumFractionDigits:2});
+const napStr=d=>d.toLocaleDateString('en-CA',{timeZone:TZ});
+const ma=()=>napStr(new Date());
+const ora=iso=>+new Date(iso).toLocaleString('en-GB',{timeZone:TZ,hour:'2-digit',hour12:false}).slice(0,2);
+const idopont=iso=>new Date(iso).toLocaleTimeString('hu-HU',{timeZone:TZ,hour:'2-digit',minute:'2-digit'});
+const napNev=n=>new Date(n+'T12:00:00').toLocaleDateString('hu-HU',{month:'short',day:'numeric',weekday:'short'});
+const lepNap=(n,d)=>{const x=new Date(n+'T12:00:00');x.setDate(x.getDate()+d);return napStr(x);};
+// [név, hatás a kasszára, hatás a széfre] – mint a tablet pénz fülén és az eszközök/penzmozgas.py-ban.
+const PT={nyito:['Nyitó egyenleg',1,0],penztargep:['Pénztárgép készpénz (napi zárás)',1,0],vasarlas:['Vásárlás a kasszából',-1,0],kivet:['Kivét a kasszából',-1,0],
+  szefbe:['Széfbe',-1,1],szefbol:['Széfből a kasszába',1,-1],vasarlas_szef:['Vásárlás széfből',0,-1],kivet_szef:['Kivét széfből',0,-1],zaro:['Záró egyenleg (számolt)',0,0]};
+
+let jelszo=null, nap=ma(), adat=null, arak={}, termekek={}, idozito=null, utolso=null, hiba=null;
+try{jelszo=localStorage.getItem(JK)||sessionStorage.getItem(JK);}catch(e){}
+
+async function rpc(fn,body){const r=await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json();if(!r.ok){const e=new Error(j.message||r.status);e.kod=j.code;throw e;}return j;}
+async function torzsadat(){
+  try{arak=await (await fetch('arak.json',{cache:'no-cache'})).json();}catch(e){arak={};}
+  try{const r=await fetch(`${SB_URL}/rest/v1/termekek?select=id,nev,ar,egyseg,kat`,{headers:{apikey:SB_KEY}});(await r.json()).forEach(t=>termekek[t.id]=t);}catch(e){}}
+
+function belepView(uz){
+  $('#app').innerHTML=`<form class="belep" onsubmit="belep(event)"><h1>Zsömle – élő áttekintés</h1>
+   <input type="password" id="jsz" placeholder="Tulajdonosi jelszó" autocomplete="current-password" autofocus>
+   <label><input type="checkbox" id="megjegyez" checked> Jegyezze meg ezen az eszközön</label>
+   <button>Belépés</button><div class="hiba">${esc(uz||'')}</div></form>`;}
+async function belep(e){e.preventDefault();const j=$('#jsz').value;if(!j)return;
+  try{await rpc('raktar_adatok',{p_jelszo:j,p_nap:nap});}catch(err){belepView(err.kod==='28P01'?'Hibás jelszó.':'Nem érhető el az adatbázis: '+err.message);return;}
+  jelszo=j;try{($('#megjegyez').checked?localStorage:sessionStorage).setItem(JK,j);}catch(e){}indit();}
+function kilep(){try{localStorage.removeItem(JK);sessionStorage.removeItem(JK);}catch(e){}jelszo=null;clearTimeout(idozito);belepView();}
+
+async function frissit(){clearTimeout(idozito);
+  try{adat=await rpc('raktar_adatok',{p_jelszo:jelszo,p_nap:nap});utolso=new Date();hiba=null;}
+  catch(err){if(err.kod==='28P01'){kilep();return;}hiba=err.message;}
+  rajzol();
+  // Csak a mai napot és csak látható lapon frissítjük; más napok adata már nem változik (javítás ritka, kézzel frissíthető).
+  if(nap===ma()&&!document.hidden)idozito=setTimeout(frissit,FRISSITES_MP*1000);}
+function napValt(d){nap=d===0?ma():lepNap(nap,d);if(nap>ma())nap=ma();adat=null;rajzol();frissit();}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&jelszo)frissit();});
+
+function szamol(){const A=adat;
+  // Napi eladás lap (napi_vonal): eladva = +1/−1 koppintások összege, maradt = db, osszeg = Foodora/Munch Ft.
+  const V={};A.vonal.forEach(v=>{const x=V[v.fajta]||(V[v.fajta]={eladva:0,maradt:0,osszeg:0,dolg:{}});x[v.tipus]+=+v.ertek;
+    if(v.tipus==='eladva')x.dolg[v.dolgozo]=(x.dolg[v.dolgozo]||0)+(+v.ertek);});
+  const vonalSor=Object.entries(V).map(([f,x])=>({fajta:f,...x,ar:arak[f]?.ar??null,csoport:arak[f]?.csoport||'Egyéb',
+    ft:x.osszeg?x.osszeg:(arak[f]?.ar?x.eladva*arak[f].ar:0)})).sort((a,b)=>a.csoport.localeCompare(b.csoport,'hu')||b.eladva-a.eladva);
+  const lapBevetel=vonalSor.filter(s=>!s.osszeg).reduce((s,x)=>s+x.ft,0), szallitoBevetel=vonalSor.reduce((s,x)=>s+x.osszeg,0);
+  const sutes=A.sutes.filter(s=>+s.db>0), maradek=A.maradek.filter(m=>+m.menny>0);
+  const S={};sutes.forEach(s=>{const k=s.termek_id??s.nev;const x=S[k]||(S[k]={nev:s.nev,db:0,maradt:0,selejt:0,ar:termekek[s.termek_id]?.egyseg==='db'?+termekek[s.termek_id].ar:null});x.db+=+s.db;});
+  maradek.forEach(m=>{const k=m.termek_id??m.nev;if(S[k])S[k][m.tipus==='selejt'?'selejt':'maradt']+=+m.menny;});
+  const sutesSor=Object.values(S).sort((a,b)=>b.db-a.db), sutesDb=sutesSor.reduce((s,x)=>s+x.db,0),
+        sutesFt=sutesSor.reduce((s,x)=>s+(x.ar?(x.db-x.maradt-x.selejt)*x.ar:0),0);
+  // Órák: napi eladás koppintás és sütés darab.
+  const O={};const ob=h=>O[h]||(O[h]={elad:0,sut:0,penz:0});
+  A.vonal.filter(v=>v.tipus==='eladva').forEach(v=>ob(ora(v.ido)).elad+=+v.ertek);
+  sutes.forEach(s=>ob(ora(s.ido)).sut+=+s.db);
+  A.eladas.forEach(e=>ob(ora(e.ido)).penz+=+e.osszeg);
+  // Pénz: ha ma nincs nyitó számolás, az előző záró a nyitó (mint a tableten és a penzmozgas.py-ban).
+  const P={};Object.keys(PT).forEach(k=>P[k]=0);A.penz.forEach(p=>{if(p.tipus in P)P[p.tipus]+=+p.osszeg;});
+  const vanNyito=A.penz.some(p=>p.tipus==='nyito'&&+p.osszeg>0);
+  const autoNyito=!vanNyito&&A.elozo_zaro?+A.elozo_zaro.osszeg:null;if(autoNyito!=null)P.nyito=autoNyito;
+  const progKp=A.eladas.filter(e=>e.fizetes==='keszpenz').reduce((s,e)=>s+(+e.osszeg),0), progKartya=A.eladas.filter(e=>e.fizetes==='kartya').reduce((s,e)=>s+(+e.osszeg),0);
+  const kassza=progKp+Object.entries(PT).reduce((a,[k,v])=>a+v[1]*P[k],0), szefValt=Object.entries(PT).reduce((a,[k,v])=>a+v[2]*P[k],0);
+  const szef=A.szef_nap_elejen==null?null:+A.szef_nap_elejen+szefValt;
+  // Dolgozónként: napi eladás lap Ft-ban (az ár ismert fajtáknál), sütés db, rögzített sor.
+  const D={};const dd=n=>D[n]||(D[n]={elad:0,ft:0,sut:0,sor:0});
+  A.vonal.forEach(v=>{dd(v.dolgozo).sor++;if(v.tipus==='eladva'){dd(v.dolgozo).elad+=+v.ertek;dd(v.dolgozo).ft+=(+v.ertek)*(V[v.fajta]&&!V[v.fajta].osszeg&&arak[v.fajta]?.ar||0);}});
+  sutes.forEach(s=>{dd(s.dolgozo).sut+=+s.db;dd(s.dolgozo).sor++;});maradek.forEach(m=>dd(m.dolgozo).sor++);A.penz.forEach(p=>dd(p.dolgozo).sor++);
+  A.eladas.forEach(e=>{dd(e.dolgozo).ft+=+e.osszeg;dd(e.dolgozo).sor++;});
+  return {vonalSor,lapBevetel,szallitoBevetel,sutesSor,sutesDb,sutesFt,O,P,autoNyito,progKp,progKartya,kassza,szefValt,szef,D,maradek};}
+
+function savok(ertek,max){return `<div class="sav"><i style="width:${max?Math.round(ertek/max*100):0}%"></i><span>${db(ertek)}</span></div>`;}
+
+function rajzol(){
+  const allapot=hiba?`<div class="allapot hiba"><span class="pont"></span>Nem sikerült frissíteni (${esc(hiba)}) – újrapróbálom</div>`
+    :`<div class="allapot"><span class="pont"></span>${utolso?'Frissítve '+utolso.toLocaleTimeString('hu-HU')+(nap===ma()?` · ${FRISSITES_MP} másodpercenként frissül`:''):'Betöltés…'}</div>`;
+  const fej=`<div class="top"><h1>Zsömle – élő áttekintés</h1><button onclick="napValt(-1)" aria-label="Előző nap">‹</button><span class="nap">${nap===ma()?'Ma, ':''}${napNev(nap)}</span>
+    <button onclick="napValt(1)" aria-label="Következő nap" ${nap===ma()?'disabled style="opacity:.4"':''}>›</button>${nap!==ma()?'<button onclick="napValt(0)">Ma</button>':''}<button onclick="frissit()">Frissítés</button><button onclick="kilep()">Kilépés</button>${allapot}</div>`;
+  if(!adat){$('#app').innerHTML=fej+'<main><p class="ures">Betöltés…</p></main>';return;}
+  const R=szamol(), A=adat;
+  const csempe=(c,e,m)=>`<div class="cs"><div class="c">${c}</div><div class="e">${e}</div>${m?`<div class="m">${m}</div>`:''}</div>`;
+  const csempek=`<div class="csempek">
+    ${csempe('Napi eladás lap',ft(R.lapBevetel),'hot dog, hamburger, szendvics, kávé – listaáron')}
+    ${csempe('Foodora / Munch',ft(R.szallitoBevetel),'a beírt napi összeg')}
+    ${csempe('Fornetti sütés',db(R.sutesDb)+' db',R.sutesFt?'eladva kb. '+ft(R.sutesFt):'')}
+    ${csempe('Maradék / selejt',R.maradek.length+' tétel',R.maradek.filter(m=>m.tipus==='selejt').length+' selejt')}
+    ${A.eladas.length?csempe('Programban eladva',ft(R.progKp+R.progKartya),`${A.eladas.length} vásárlás · kártya ${ft(R.progKartya)}`):''}
+    ${csempe('Várható kassza',ft(R.kassza),A.penz.some(p=>p.tipus==='penztargep')?'pénztárgép-készpénzzel':'pénztárgép-készpénz még nincs beírva')}
+    ${csempe('Széf',R.szef==null?'–':ft(R.szef),'ma '+(R.szefValt>=0?'+ ':'− ')+ft(Math.abs(R.szefValt)))}
+  </div>`;
+  // Óránként
+  const orak=Object.keys(R.O).map(Number).sort((a,b)=>a-b);
+  const mE=Math.max(0,...orak.map(h=>R.O[h].elad)), mS=Math.max(0,...orak.map(h=>R.O[h].sut));
+  const orasBox=`<div class="box"><h2>Óránként</h2>${orak.length?`<table><tr><th>Óra</th><th>Napi eladás lap (db)</th><th>Fornetti sütés (db)</th>${A.eladas.length?'<th class="sz">Program Ft</th>':''}</tr>
+    ${orak.map(h=>`<tr><td>${String(h).padStart(2,'0')}–${String(h+1).padStart(2,'0')}</td><td>${savok(R.O[h].elad,mE)}</td><td>${savok(R.O[h].sut,mS)}</td>${A.eladas.length?`<td class="sz">${ft(R.O[h].penz)}</td>`:''}</tr>`).join('')}</table>`:'<p class="ures">Még nincs rögzítés.</p>'}</div>`;
+  // Napi eladás fajtánként
+  let cs='';const vonalBox=`<div class="box"><h2>Napi eladás lap</h2>${R.vonalSor.length?`<table><tr><th>Fajta</th><th class="sz">Eladva</th><th class="sz">Maradt</th><th class="sz">Ft</th></tr>
+    ${R.vonalSor.map(s=>{const f=s.csoport!==cs?(cs=s.csoport,`<tr><th colspan="4">${esc(cs)}</th></tr>`):'';
+      return f+`<tr><td>${esc(s.fajta)}</td><td class="sz">${db(s.eladva)}</td><td class="sz">${s.maradt?db(s.maradt):''}</td><td class="sz">${s.ft?ft(s.ft):''}</td></tr>`;}).join('')}
+    <tr class="ossz"><td>Összesen</td><td class="sz">${db(R.vonalSor.filter(s=>!s.osszeg).reduce((a,s)=>a+s.eladva,0))}</td><td></td><td class="sz">${ft(R.lapBevetel+R.szallitoBevetel)}</td></tr></table>
+    <p class="megj">A Ft a fajtalista eladási árával számolt (a Foodora/Munch sor a beírt összeg); menükedvezmény és extrák nélkül.</p>`:'<p class="ures">Ma még nincs napi eladás.</p>'}</div>`;
+  // Fornetti
+  const fornBox=`<div class="box"><h2>Fornetti sütés és maradék</h2>${R.sutesSor.length?`<table><tr><th>Termék</th><th class="sz">Sütve</th><th class="sz">Maradt</th><th class="sz">Selejt</th><th class="sz">Eladva*</th></tr>
+    ${R.sutesSor.map(s=>`<tr><td>${esc(s.nev)}</td><td class="sz">${db(s.db)}</td><td class="sz">${s.maradt?db(s.maradt):''}</td><td class="sz">${s.selejt?db(s.selejt):''}</td><td class="sz">${db(s.db-s.maradt-s.selejt)}</td></tr>`).join('')}
+    <tr class="ossz"><td>Összesen</td><td class="sz">${db(R.sutesDb)}</td><td></td><td></td><td class="sz">${R.sutesFt?ft(R.sutesFt):''}</td></tr></table>
+    <p class="megj">* sütve − maradék − selejt; a maradék általában záráskor kerül be, addig az „eladva” a kisütött mennyiség.</p>`:'<p class="ures">Ma még nem volt sütés.</p>'}</div>`;
+  // Maradék / selejt (minden termék)
+  const marBox=`<div class="box"><h2>Maradék és selejt</h2>${R.maradek.length?`<table><tr><th>Termék</th><th>Típus</th><th class="sz">Menny.</th><th>Ki, mikor</th></tr>
+    ${R.maradek.map(m=>`<tr><td>${esc(m.nev)}</td><td>${m.tipus==='selejt'?'selejt':'maradék'}</td><td class="sz">${db(m.menny)} ${esc(m.egyseg)}</td><td>${esc(m.dolgozo)} ${idopont(m.ido)}${m.javitva?' · javítva':''}</td></tr>`).join('')}</table>`:'<p class="ures">Még nincs maradék vagy selejt.</p>'}</div>`;
+  // Kifogyások
+  const kif=A.kifogy.filter(k=>k.ora).sort((a,b)=>a.ora.localeCompare(b.ora));
+  const kifBox=`<div class="box"><h2>Mikor fogyott el?</h2>${kif.length?`<table><tr><th>Termék</th><th class="sz">Időpont</th><th>Rögzítette</th></tr>
+    ${kif.map(k=>`<tr><td>${esc(k.termek)}</td><td class="sz">${esc(k.ora)}</td><td>${esc(k.dolgozo)}</td></tr>`).join('')}</table>`:'<p class="ures">Ma még semmi nem fogyott el.</p>'}</div>`;
+  // Kassza és széf
+  const P=R.P;const sorok=Object.entries(PT).filter(([k])=>k!=='zaro'&&(P[k]||k==='nyito'||k==='penztargep'));
+  const elteres=P.zaro?P.zaro-R.kassza:null;
+  const penzBox=`<div class="box"><h2>Kassza és széf</h2><table><tr><th>Tétel</th><th class="sz">Kassza</th><th class="sz">Széf</th></tr>
+    ${R.szef!=null?`<tr><td>Széf a nap elején</td><td></td><td class="sz">${ft(A.szef_nap_elejen)}</td></tr>`:''}
+    ${sorok.map(([k,[n,e,f]])=>`<tr><td>${k==='nyito'&&R.autoNyito!=null?n+' (előző zárásból)':n}</td><td class="sz">${e?(e>0?'+ ':'− ')+ft(P[k]):''}</td><td class="sz">${f?(f>0?'+ ':'− ')+ft(P[k]):''}</td></tr>`).join('')}
+    ${R.progKp?`<tr><td>Készpénzes eladás a programban</td><td class="sz">+ ${ft(R.progKp)}</td><td></td></tr>`:''}
+    <tr class="ossz"><td>Várható kassza</td><td class="sz">${ft(R.kassza)}</td><td class="sz">${R.szef==null?'':ft(R.szef)}</td></tr>
+    ${P.zaro?`<tr><td>Záráskor számolt</td><td class="sz">${ft(P.zaro)}</td><td></td></tr><tr class="ossz"><td>Eltérés</td><td class="sz ${elteres===0?'jo':'rossz'}">${elteres===0?'egyezik':(elteres>0?'többlet + ':'hiány − ')+ft(Math.abs(elteres))}</td><td></td></tr>`:''}
+    </table>${!A.penz.some(p=>p.tipus==='penztargep')?'<p class="megj">A pénztárgép napi készpénze záráskor kerül be; addig a várható kassza nem tartalmazza a napi bevételt.</p>':''}
+    ${A.penz.length?`<h2 style="margin-top:14px">Tételesen</h2><table>${A.penz.map(p=>`<tr${+p.osszeg===0&&p.javitva?' class="halv"':''}><td>${idopont(p.ido)}</td><td>${esc((PT[p.tipus]||[p.tipus])[0])}${p.megjegyzes&&p.megjegyzes!=='címletes számolás'?'<br><span class="ures">'+esc(p.megjegyzes)+'</span>':''}</td><td class="sz">${+p.osszeg===0&&p.javitva?'törölve':ft(p.osszeg)}</td><td>${esc(p.dolgozo)}${p.javitva?' · javítva':''}</td></tr>`).join('')}</table>`:''}</div>`;
+  // Dolgozónként
+  const dl=Object.entries(R.D).sort((a,b)=>b[1].ft-a[1].ft);
+  const dolgBox=`<div class="box"><h2>Dolgozónként</h2>${dl.length?`<table><tr><th>Dolgozó</th><th class="sz">Eladás (db)</th><th class="sz">Eladás Ft</th><th class="sz">Sütés (db)</th><th class="sz">Rögzítés</th></tr>
+    ${dl.map(([n,x])=>`<tr><td>${esc(n)}</td><td class="sz">${db(x.elad)}</td><td class="sz">${ft(x.ft)}</td><td class="sz">${db(x.sut)}</td><td class="sz">${x.sor}</td></tr>`).join('')}</table>
+    <p class="megj">Az eladás a napi eladás lap koppintásai (és a programbeli eladás); a pénztárgépen ütött forgalom nincs benne.</p>`:'<p class="ures">Még nincs rögzítés.</p>'}</div>`;
+  $('#app').innerHTML=fej+`<main>${csempek}<div class="racs">${orasBox}${vonalBox}${fornBox}${penzBox}${marBox}${kifBox}${dolgBox}</div></main>`;}
+
+async function indit(){adat=null;rajzol();await torzsadat();frissit();}
+jelszo?indit():belepView();
+</script>
+</body>
+</html>
