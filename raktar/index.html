@@ -162,6 +162,15 @@ function rajzol(){
     ${R.sutesSor.map(s=>`<tr><td>${esc(s.nev)}</td><td class="sz">${db(s.db)}</td><td class="sz">${s.maradt?db(s.maradt):''}</td><td class="sz">${s.selejt?db(s.selejt):''}</td><td class="sz">${db(s.db-s.maradt-s.selejt)}</td></tr>`).join('')}
     <tr class="ossz"><td>Összesen</td><td class="sz">${db(R.sutesDb)}</td><td></td><td></td><td class="sz">${R.sutesFt?ft(R.sutesFt):''}</td></tr></table>
     <p class="megj">* sütve − maradék − selejt; a maradék általában záráskor kerül be, addig az „eladva” a kisütött mennyiség.</p>`:'<p class="ures">Ma még nem volt sütés.</p>'}</div>`;
+  // Fornetti fagyasztókészlet: mindig a mostani állapot (leltár + beszerzés − a leltár óta kisütött), a napválasztótól független.
+  const FK=A.fornetti_keszlet, kgdb=(v,eg)=>v==null?'–':db(eg==='kg'?Math.round(v*100)/100:v)+' '+eg;
+  const fkBox=`<div class="box"><h2>Fornetti fagyasztókészlet – most</h2>${FK?`<table><tr><th>Termék</th><th class="sz">Leltár</th><th class="sz">+ Besz.</th><th class="sz">− Fogyás</th><th class="sz">Most</th></tr>
+    ${FK.tetelek.map(t=>`<tr><td>${esc(t.termek)}${t.leltaron?'':'<br><span class="ures">nem volt a leltáron</span>'}</td><td class="sz">${kgdb(t.leltar,t.egyseg)}</td>
+      <td class="sz">${+t.beszerzes?kgdb(t.beszerzes,t.egyseg):''}</td><td class="sz">${t.fogyas==null?'?':+t.fogyas?kgdb(t.fogyas,t.egyseg)+(t.egyseg==='kg'?'<br><span class="ures">'+db(t.kisutve)+' db</span>':''):''}</td>
+      <td class="sz ${t.aktualis!=null&&t.aktualis<0?'rossz':''}"><b>${kgdb(t.aktualis,t.egyseg)}</b></td></tr>`).join('')}</table>
+    ${FK.egyeb.length?`<p class="megj rossz">A leltár óta kisütött, de a leltáron nem szereplő: ${FK.egyeb.map(e=>esc(e.termek)+' ('+db(e.kisutve)+' db)').join(', ')} – ellenőrizendő.</p>`:''}
+    <p class="megj">Leltár: ${new Date(FK.leltar_ideje).toLocaleString('hu-HU',{timeZone:TZ,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}. A kisütés élőben vonódik le (kg-os terméknél db × sütött darabsúly / 0,9); a beszerzés az esti körben frissül (utoljára ${new Date(FK.alap_frissitve).toLocaleString('hu-HU',{timeZone:TZ,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}). „?” = nincs darabsúly, a fogyás nem számolható.</p>`
+    :'<p class="ures">Még nincs feltöltött leltár.</p>'}</div>`;
   // Maradék / selejt (minden termék)
   const marBox=`<div class="box"><h2>Maradék és selejt</h2>${R.maradek.length?`<table><tr><th>Termék</th><th>Típus</th><th class="sz">Menny.</th><th>Ki, mikor</th></tr>
     ${R.maradek.map(m=>`<tr><td>${esc(m.nev)}</td><td>${m.tipus==='selejt'?'selejt':'maradék'}</td><td class="sz">${db(m.menny)} ${esc(m.egyseg)}</td><td>${esc(m.dolgozo)} ${idopont(m.ido)}${m.javitva?' · javítva':''}</td></tr>`).join('')}</table>`:'<p class="ures">Még nincs maradék vagy selejt.</p>'}</div>`;
@@ -185,7 +194,7 @@ function rajzol(){
   const dolgBox=`<div class="box"><h2>Dolgozónként</h2>${dl.length?`<table><tr><th>Dolgozó</th><th class="sz">Eladás (db)</th><th class="sz">Eladás Ft</th><th class="sz">Sütés (db)</th><th class="sz">Rögzítés</th></tr>
     ${dl.map(([n,x])=>`<tr><td>${esc(n)}</td><td class="sz">${db(x.elad)}</td><td class="sz">${ft(x.ft)}</td><td class="sz">${db(x.sut)}</td><td class="sz">${x.sor}</td></tr>`).join('')}</table>
     <p class="megj">Az eladás a napi eladás lap koppintásai (és a programbeli eladás); a pénztárgépen ütött forgalom nincs benne.</p>`:'<p class="ures">Még nincs rögzítés.</p>'}</div>`;
-  $('#app').innerHTML=fej+`<main>${csempek}<div class="racs">${orasBox}${vonalBox}${fornBox}${penzBox}${marBox}${kifBox}${dolgBox}</div></main>`;}
+  $('#app').innerHTML=fej+`<main>${csempek}<div class="racs">${orasBox}${vonalBox}${fornBox}${fkBox}${penzBox}${marBox}${kifBox}${dolgBox}</div></main>`;}
 
 async function indit(){adat=null;rajzol();await torzsadat();frissit();}
 jelszo?indit():belepView();
