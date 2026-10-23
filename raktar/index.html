@@ -57,7 +57,7 @@ tr.ossz td{font-weight:700;border-bottom:0}
 const SB_URL='https://dqttcjxviijeopzbqfqq.supabase.co', SB_KEY='sb_publishable_S4aefwe9JNDz5hunZdHF9Q_iRBRbmvP';
 const FRISSITES_MP=10, TZ='Europe/Budapest', JK='raktar_jelszo';
 // Az oldal változata: a kozzetesz.sh a közzétett példányba írja (itt 'fejlesztes'). Ha kint újabb van, az oldal újratölt.
-const OLDAL_VER='20261023200747';
+const OLDAL_VER='20261023225038';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ft=n=>Math.round(+n||0).toLocaleString('hu-HU')+' Ft';
@@ -300,8 +300,8 @@ function rajzol(){
   // A Z-zárás és Teya oszlopok az Excel sorrendjében (a jsonb nem őrzi meg a sorrendet).
   const ZREND=['Zárás sorszáma','Forgalom 5% ÁFA','Forgalom 18% ÁFA','Forgalom 27% ÁFA','Forgalom ÁFA-mentes, TAM','Nyugták száma','Sztornó és visszáru','Pénz be','Pénz ki',
     'Fiók készpénz a pénztárgép szerint','Megszámolt záró − pénztárgép fiók','SZÉP/EP kártya','Bankkártya','Kártyás fizetések száma'];
-  const zr=k=>{const i=ZREND.indexOf(k.replace(/ \((Z-zárás|Teya)\)$/,''));return i<0?99:i;};
-  const ZOSZL=XN?Object.entries(XN).filter(([k])=>/\((Z-zárás|Teya)\)$/.test(k)).sort((a,b)=>zr(a[0])-zr(b[0])):[];
+  const zr=k=>{const i=ZREND.indexOf(k.replace(/ \((Z-zárás|terminál|Teya)\)$/,''));return i<0?99:i;};
+  const ZOSZL=XN?Object.entries(XN).filter(([k])=>/\((Z-zárás|terminál|Teya)\)$/.test(k)).sort((a,b)=>zr(a[0])-zr(b[0])):[];
   const napX=XN?`<div class="racs" style="gap:10px"><table><tr><th>Bevétel</th><th class="sz"></th></tr>
       ${BEV.filter(([k])=>XN[k]).map(([k,n])=>`<tr><td>${n}</td><td class="sz">${xft(XN[k])}</td></tr>`).join('')}
       <tr class="ossz"><td>Bevétel összesen</td><td class="sz">${xft(XN['Bevétel összesen'])}</td></tr>
