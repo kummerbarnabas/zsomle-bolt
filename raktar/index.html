@@ -104,6 +104,10 @@ function szamol(){const A=adat;
   // Napi eladás lap (napi_vonal): eladva = +1/−1 koppintások összege; maradt (db) és osszeg (Foodora/Munch Ft) az utolsó beírt érték, mint a tableten.
   const V={};A.vonal.forEach(v=>{const x=V[v.fajta]||(V[v.fajta]={eladva:0,maradt:null,osszeg:null,dolg:{}});
     if(v.tipus==='eladva'){x.eladva+=+v.ertek;x.dolg[v.dolgozo]=(x.dolg[v.dolgozo]||0)+(+v.ertek);}else x[v.tipus]=+v.ertek;});
+  // A napi lap fajtái a tablet Maradék fülén is szerepelhetnek: ha az Esti beírásnál nincs „maradt”, ezek összege számít (mint a tablet_import.py-ban).
+  const lapNevek=new Set(lapCsop.flatMap(g=>g.fajtak)), MM={};
+  A.maradek.forEach(m=>{if(lapNevek.has(m.nev))MM[m.nev]=(MM[m.nev]||0)+(+m.menny);});
+  Object.entries(MM).forEach(([f,q])=>{const x=V[f]||(V[f]={eladva:0,maradt:null,osszeg:null,dolg:{}});if(x.maradt==null)x.maradt=q;});
   // Minden fajta látszik, 0-val is (mint a tableten); ami a listán nincs, de rögzítették, az „Egyéb” csoportba kerül.
   const sor=(f,g)=>{const x=V[f]||{eladva:0,maradt:null,osszeg:null};return {fajta:f,...x,csoport:g.nev,maradekos:!!g.maradek,osszeges:!!g.osszeg,
     ft:g.osszeg?(x.osszeg||0):(arak[f]?.ar?x.eladva*arak[f].ar:0)};};
