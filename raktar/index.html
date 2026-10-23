@@ -70,13 +70,15 @@ const lepNap=(n,d)=>{const x=new Date(n+'T12:00:00');x.setDate(x.getDate()+d);re
 const PT={nyito:['Nyitó egyenleg',1,0],penztargep:['Pénztárgép készpénz (napi zárás)',1,0],vasarlas:['Vásárlás a kasszából',-1,0],kivet:['Kivét a kasszából',-1,0],
   szefbe:['Széfbe',-1,1],szefbol:['Széfből a kasszába',1,-1],vasarlas_szef:['Vásárlás széfből',0,-1],kivet_szef:['Kivét széfből',0,-1],zaro:['Záró egyenleg (számolt)',0,0]};
 
-let jelszo=null, nap=ma(), adat=null, arak={}, termekek={}, idozito=null, utolso=null, hiba=null;
+let jelszo=null, nap=ma(), adat=null, arak={}, lapCsop=[], termekek={}, idozito=null, utolso=null, hiba=null;
 try{jelszo=localStorage.getItem(JK)||sessionStorage.getItem(JK);}catch(e){}
 
 async function rpc(fn,body){const r=await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
   const j=await r.json();if(!r.ok){const e=new Error(j.message||r.status);e.kod=j.code;throw e;}return j;}
 async function torzsadat(){
   try{arak=await (await fetch('arak.json',{cache:'no-cache'})).json();}catch(e){arak={};}
+  // A napi lap csoportjai és fajtái a tablet sorrendjében (a tablet saját fajtak.json-ja).
+  try{lapCsop=await (await fetch('../fajtak.json',{cache:'no-cache'})).json();}catch(e){lapCsop=[];}
   try{const r=await fetch(`${SB_URL}/rest/v1/termekek?select=id,nev,ar,egyseg,kat`,{headers:{apikey:SB_KEY}});(await r.json()).forEach(t=>termekek[t.id]=t);}catch(e){}}
 
 function belepView(uz){
@@ -100,11 +102,15 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&jelszo)fr
 
 function szamol(){const A=adat;
   // Napi eladás lap (napi_vonal): eladva = +1/−1 koppintások összege; maradt (db) és osszeg (Foodora/Munch Ft) az utolsó beírt érték, mint a tableten.
-  const V={};A.vonal.forEach(v=>{const x=V[v.fajta]||(V[v.fajta]={eladva:0,maradt:0,osszeg:0,dolg:{}});
+  const V={};A.vonal.forEach(v=>{const x=V[v.fajta]||(V[v.fajta]={eladva:0,maradt:null,osszeg:null,dolg:{}});
     if(v.tipus==='eladva'){x.eladva+=+v.ertek;x.dolg[v.dolgozo]=(x.dolg[v.dolgozo]||0)+(+v.ertek);}else x[v.tipus]=+v.ertek;});
-  const vonalSor=Object.entries(V).map(([f,x])=>({fajta:f,...x,ar:arak[f]?.ar??null,csoport:arak[f]?.csoport||'Egyéb',
-    ft:x.osszeg?x.osszeg:(arak[f]?.ar?x.eladva*arak[f].ar:0)})).sort((a,b)=>a.csoport.localeCompare(b.csoport,'hu')||b.eladva-a.eladva);
-  const lapBevetel=vonalSor.filter(s=>!s.osszeg).reduce((s,x)=>s+x.ft,0), szallitoBevetel=vonalSor.reduce((s,x)=>s+x.osszeg,0);
+  // Minden fajta látszik, 0-val is (mint a tableten); ami a listán nincs, de rögzítették, az „Egyéb” csoportba kerül.
+  const sor=(f,g)=>{const x=V[f]||{eladva:0,maradt:null,osszeg:null};return {fajta:f,...x,csoport:g.nev,maradekos:!!g.maradek,osszeges:!!g.osszeg,
+    ft:g.osszeg?(x.osszeg||0):(arak[f]?.ar?x.eladva*arak[f].ar:0)};};
+  const listan=new Set(lapCsop.flatMap(g=>g.fajtak));
+  const vonalSor=[...lapCsop.flatMap(g=>g.fajtak.map(f=>sor(f,g))),
+    ...Object.keys(V).filter(f=>!listan.has(f)).map(f=>sor(f,{nev:'Egyéb',maradek:V[f].maradt!=null,osszeg:V[f].osszeg!=null}))];
+  const lapBevetel=vonalSor.filter(s=>!s.osszeges).reduce((s,x)=>s+x.ft,0), szallitoBevetel=vonalSor.filter(s=>s.osszeges).reduce((s,x)=>s+x.ft,0);
   const sutes=A.sutes.filter(s=>+s.db>0), maradek=A.maradek.filter(m=>+m.menny>0);
   const S={};sutes.forEach(s=>{const k=s.termek_id??s.nev;const x=S[k]||(S[k]={nev:s.nev,db:0,maradt:0,selejt:0,ar:termekek[s.termek_id]?.egyseg==='db'?+termekek[s.termek_id].ar:null});x.db+=+s.db;});
   maradek.forEach(m=>{const k=m.termek_id??m.nev;if(S[k])S[k][m.tipus==='selejt'?'selejt':'maradt']+=+m.menny;});
@@ -124,7 +130,7 @@ function szamol(){const A=adat;
   const szef=A.szef_nap_elejen==null?null:+A.szef_nap_elejen+szefValt;
   // Dolgozónként: napi eladás lap Ft-ban (az ár ismert fajtáknál), sütés db, rögzített sor.
   const D={};const dd=n=>D[n]||(D[n]={elad:0,ft:0,sut:0,sor:0});
-  A.vonal.forEach(v=>{dd(v.dolgozo).sor++;if(v.tipus==='eladva'){dd(v.dolgozo).elad+=+v.ertek;dd(v.dolgozo).ft+=(+v.ertek)*(V[v.fajta]&&!V[v.fajta].osszeg&&arak[v.fajta]?.ar||0);}});
+  A.vonal.forEach(v=>{dd(v.dolgozo).sor++;if(v.tipus==='eladva'){dd(v.dolgozo).elad+=+v.ertek;dd(v.dolgozo).ft+=(+v.ertek)*(arak[v.fajta]?.ar||0);}});
   sutes.forEach(s=>{dd(s.dolgozo).sut+=+s.db;dd(s.dolgozo).sor++;});maradek.forEach(m=>dd(m.dolgozo).sor++);A.penz.forEach(p=>dd(p.dolgozo).sor++);
   A.eladas.forEach(e=>{dd(e.dolgozo).ft+=+e.osszeg;dd(e.dolgozo).sor++;});
   // Programbeli eladás termékenként és ÁFA szerint (mint a tablet Statisztika fülén).
@@ -162,9 +168,9 @@ function rajzol(){
   // Napi eladás fajtánként
   let cs='';const vonalBox=`<div class="box" id="napilap"><h2>Napi eladás lap</h2>${R.vonalSor.length?`<table><tr><th>Fajta</th><th class="sz">Eladva</th><th class="sz">Maradt</th><th class="sz">Ft</th></tr>
     ${R.vonalSor.map(s=>{const f=s.csoport!==cs?(cs=s.csoport,`<tr><th colspan="4">${esc(cs)}</th></tr>`):'';
-      return f+`<tr><td>${esc(s.fajta)}</td><td class="sz">${db(s.eladva)}</td><td class="sz">${s.maradt?db(s.maradt):''}</td><td class="sz">${s.ft?ft(s.ft):''}</td></tr>`;}).join('')}
-    <tr class="ossz"><td>Összesen</td><td class="sz">${db(R.vonalSor.filter(s=>!s.osszeg).reduce((a,s)=>a+s.eladva,0))}</td><td></td><td class="sz">${ft(R.lapBevetel+R.szallitoBevetel)}</td></tr></table>
-    <p class="megj">A Ft a fajtalista eladási árával számolt (a Foodora/Munch sor a beírt összeg); menükedvezmény és extrák nélkül.</p>`:'<p class="ures">Ma még nincs napi eladás.</p>'}</div>`;
+      return f+`<tr${s.eladva||s.maradt||s.osszeg?'':' class="halv"'}><td>${esc(s.fajta)}</td><td class="sz">${db(s.eladva)}</td><td class="sz">${s.maradekos?(s.maradt!=null?db(s.maradt):'–'):''}</td><td class="sz">${s.osszeges?(s.osszeg!=null?ft(s.osszeg):'–'):(s.ft?ft(s.ft):'')}</td></tr>`;}).join('')}
+    <tr class="ossz"><td>Összesen</td><td class="sz">${db(R.vonalSor.filter(s=>!s.osszeges).reduce((a,s)=>a+s.eladva,0))}</td><td></td><td class="sz">${ft(R.lapBevetel+R.szallitoBevetel)}</td></tr></table>
+    <p class="megj">A Ft a fajtalista eladási árával számolt (a Foodora/Munch sor a beírt napi összeg); menükedvezmény és extrák nélkül. A „maradt” és az összeg az esti beírásból jön; „–” = még nincs beírva.</p>`:'<p class="ures">A fajták listája nem töltődött be – frissíts.</p>'}</div>`;
   // Fornetti
   const fornBox=`<div class="box"><h2>Fornetti sütés és maradék</h2>${R.sutesSor.length?`<table><tr><th>Termék</th><th class="sz">Sütve</th><th class="sz">Maradt</th><th class="sz">Selejt</th><th class="sz">Eladva*</th></tr>
     ${R.sutesSor.map(s=>`<tr><td>${esc(s.nev)}</td><td class="sz">${db(s.db)}</td><td class="sz">${s.maradt?db(s.maradt):''}</td><td class="sz">${s.selejt?db(s.selejt):''}</td><td class="sz">${db(s.db-s.maradt-s.selejt)}</td></tr>`).join('')}
