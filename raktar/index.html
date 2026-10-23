@@ -56,6 +56,8 @@ tr.ossz td{font-weight:700;border-bottom:0}
 <script>
 const SB_URL='https://dqttcjxviijeopzbqfqq.supabase.co', SB_KEY='sb_publishable_S4aefwe9JNDz5hunZdHF9Q_iRBRbmvP';
 const FRISSITES_MP=10, TZ='Europe/Budapest', JK='raktar_jelszo';
+// Az oldal változata: a kozzetesz.sh a közzétett példányba írja (itt 'fejlesztes'). Ha kint újabb van, az oldal újratölt.
+const OLDAL_VER='20261023190527';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ft=n=>Math.round(+n||0).toLocaleString('hu-HU')+' Ft';
@@ -98,7 +100,13 @@ async function frissit(){clearTimeout(idozito);
   // Csak a mai napot és csak látható lapon frissítjük; más napok adata már nem változik (javítás ritka, kézzel frissíthető).
   if(nap===ma()&&!document.hidden)idozito=setTimeout(frissit,FRISSITES_MP*1000);}
 function napValt(d){nap=d===0?ma():lepNap(nap,d);if(nap>ma())nap=ma();adat=null;rajzol();frissit();}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&jelszo)frissit();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){ujValtozat();if(jelszo)frissit();}});
+// Új változat figyelése (2026-10-23: a böngésző a régi oldalt mutatta): percenként és a lap előtérbe kerülésekor.
+// A verzio.txt-t gyorsítótár nélkül kéri; eltérésnél egyszer újratölt a változatszámmal (a CDN-t is megkerülve).
+async function ujValtozat(){if(OLDAL_VER==='fejlesztes')return;
+  try{const v=(await (await fetch('verzio.txt?t='+Date.now(),{cache:'no-store'})).text()).trim();
+    if(v&&v!==OLDAL_VER&&sessionStorage.getItem('raktar_ujratoltve')!==v){sessionStorage.setItem('raktar_ujratoltve',v);location.replace(location.pathname+'?v='+v);}}catch(e){}}
+setInterval(ujValtozat,60000);ujValtozat();
 
 function szamol(){const A=adat;
   // Napi eladás lap (napi_vonal): eladva = +1/−1 koppintások összege; maradt (db) és osszeg (Foodora/Munch Ft) az utolsó beírt érték, mint a tableten.
