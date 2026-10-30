@@ -118,7 +118,7 @@ const DOLGOZOK = [
 const TULAJ_H = 'a623a76850b821af97cc29e48e64916730601a751285edd0bb773991ea4d7c83';
 // Dolgozói fülek (a tulajdonos döntése, 2026-10-17): eladás, sütés, maradék, pénzmozgás; a statisztika és a beállítások csak a tulajdonosé.
 // Az eladás bekapcsolásához ide kell felvenni az 'elad' fület.
-const DOLGOZOI_FULEK = ['elad','lap','sut','kif','mar','penz','elozo'];
+const DOLGOZOI_FULEK = ['elad','lap','sut','kif','mar','penz','elozo','hav'];
 let tulajJelszo = null; // csak a memóriában, a szerveres statisztikához
 async function lenyomat(pin){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('zsomle:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 // Külső kapcsolatok: kiépítve, de a felhasználó döntése szerint (2026-10-16) kikapcsolva.
@@ -151,7 +151,7 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='41'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='42'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -191,13 +191,13 @@ function numDlg(title,init,done,pw,unit,maxlen){
 // ---- fő nézet ------------------------------------------------------------------
 function render(){
   if(!user)return loginView();
-  let tabs=[['elad','Eladás'],['lap','Napi lap'],['sut','Sütés'],['kif','Elfogyott'],['mar','Maradék / selejt'],['penz','Pénz'],['stat','Statisztika'],['elozo','Tegnapi maradék']];
+  let tabs=[['elad','Eladás'],['lap','Napi lap'],['sut','Sütés'],['kif','Elfogyott'],['mar','Maradék / selejt'],['penz','Pénz'],['stat','Statisztika'],['elozo','Tegnapi maradék'],['hav','Havi eladás']];
   if(!user.tulaj){tabs=tabs.filter(([k])=>DOLGOZOI_FULEK.includes(k));if(!DOLGOZOI_FULEK.includes(tab))tab=DOLGOZOI_FULEK[0];}
   if(user.tulaj)tabs.push(['beall','Beállítások']);
   $('#app').innerHTML=`<div class="top"><h1>Zsömle</h1>${tabs.map(([k,n])=>`<button class="tab ${tab===k?'on':''}" onclick="tab='${k}';render()">${n}</button>`).join('')}
   <span class="sp"></span><span class="net" id="fuggo">${varakozik?varakozik+' felküldésre vár':''}</span><span class="net">${navigator.onLine?'online':'offline – helyben mentve'}</span>
   <span class="who">${user.nev}</span><button class="tab" title="Új változat betöltése" onclick="frissit()">v${VALTOZAT} ↻</button><button class="tab" onclick="user=null;tulajJelszo=null;kosar=[];render()">Kilépés</button></div><main id="main"></main>`;
-  ({elad:saleView,lap:lapView,sut:bakeView,kif:kifView,mar:leftView,penz:penzView,stat:statView,beall:setView,elozo:elozoView})[tab]();}
+  ({elad:saleView,lap:lapView,sut:bakeView,kif:kifView,mar:leftView,penz:penzView,stat:statView,beall:setView,elozo:elozoView,hav:haviView})[tab]();}
 
 // ---- eladás --------------------------------------------------------------------
 // Keresés: kis- és nagybetű, valamint ékezet nélkül is talál (pl. „pogacsa”).
@@ -470,6 +470,36 @@ async function elozoView(){
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px">
     ${tabla('Szendvics',csop.Szendvics.map(f=>sor(f,ert(f))))}${tabla('Hot dog',csop['Hot dog'].map(f=>sor(f,ert(f))))}
     ${tabla('Fornetti (db)',forn.map(([n,v])=>sor(n,v)))}</div></div>`;}
+
+// ---- havi eladás (2026-10-30, a tulajdonos kérése: a kollégák lássák a havi eladást termékenként, napi bontásban) --------------
+let haviHonap=ma().slice(0,7);
+const haviLep=n=>{const [y,m]=haviHonap.split('-').map(Number);const d=new Date(y,m-1+n,1);haviHonap=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');haviView();};
+async function haviAdat(h){
+  let srv=null;if(navigator.onLine){try{await szinkron();const r=await sb('rpc/havi_eladas',{method:'POST',body:JSON.stringify({p_honap:h})});if(r.ok)srv=await r.json();}catch(e){}}
+  const M={},add=(nev,d,db)=>{if(!nev||!db)return;(M[nev]||(M[nev]={}))[d]=((M[nev]||{})[d]||0)+db;};
+  if(srv){srv.vonal.forEach(x=>add(x.nev,x.d,+x.db));srv.eladas.forEach(x=>add(x.nev,x.d,+x.db));}
+  const mind=!srv; // az adatbázison kívül csak a még fel nem küldött (vagy internet nélkül az összes) helyi sor számít
+  (await all('vonal')).filter(x=>x.tipus==='eladva'&&!x.demo&&napja(x.ido).startsWith(h)&&(mind||!x.szinkron)).forEach(x=>add(x.fajta,napja(x.ido),+x.ertek));
+  (await all('eladas')).filter(x=>!x.demo&&napja(x.ido).startsWith(h)&&(mind||!x.szinkron)).forEach(x=>(x.tetelek||[]).forEach(t=>add(t.nev,napja(x.ido),+t.menny)));
+  return {M,szerver:!!srv};}
+async function haviView(){
+  $('#main').innerHTML='<div class="panel"><p class="muted">Betöltés…</p></div>';
+  const {M,szerver}=await haviAdat(haviHonap);
+  const [y,m]=haviHonap.split('-').map(Number),napok=new Date(y,m,0).getDate(),mai=ma();
+  const nev=new Date(y,m-1,1).toLocaleDateString('hu-HU',{year:'numeric',month:'long'});
+  const csop=FAJTAK.map(g=>[g.nev,g.fajtak]);
+  const ismert=new Set(csop.flatMap(c=>c[1]));
+  const egyeb=Object.keys(M).filter(n=>!ismert.has(n)&&Object.values(M[n]).some(v=>v)).sort();
+  if(egyeb.length)csop.push(['Egyéb és korábbi tételek',egyeb]);
+  const nap=i=>haviHonap+'-'+String(i).padStart(2,'0');
+  const fej=`<tr><th style="position:sticky;left:0;background:var(--card);min-width:210px;text-align:left">Termék</th>${Array.from({length:napok},(_,i)=>`<th style="text-align:right;padding:4px 6px;${nap(i+1)===mai?'background:#fff3c4':''}">${i+1}</th>`).join('')}<th style="text-align:right;padding:4px 8px">Összesen</th></tr>`;
+  const sor=n=>{const v=M[n]||{};const o=Object.values(v).reduce((a,b)=>a+b,0);
+    return `<tr${o?'':' class="muted"'}><td style="position:sticky;left:0;background:var(--card);white-space:nowrap">${n}</td>${Array.from({length:napok},(_,i)=>{const x=v[nap(i+1)]||0;return `<td style="text-align:right;padding:4px 6px;${nap(i+1)===mai?'background:#fff3c4;':''}${x?'font-weight:700':'color:#bbb'}">${x||'·'}</td>`;}).join('')}<td style="text-align:right;padding:4px 8px"><b>${o}</b></td></tr>`;};
+  $('#main').innerHTML=`<div class="panel"><div class="box" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button class="jv" onclick="haviLep(-1)">◀</button><b style="font-size:20px;min-width:170px;text-align:center">${nev}</b><button class="jv" onclick="haviLep(1)">▶</button>
+    <span class="muted">Eladott darabszám naponta. ${szerver?'':'Internet nélkül: csak ezen az eszközön rögzített adat látszik. '}A mai nap sárga; „·” = nem volt eladás.</span>
+    <button class="jv" onclick="haviView()" style="margin-left:auto">↻ Frissít</button></div>
+    ${csop.map(([c,l])=>`<div class="box"><h3>${c}</h3><div style="overflow-x:auto"><table style="font-size:14px;width:auto">${fej}${l.map(sor).join('')}</table></div></div>`).join('')}</div>`;}
 
 // ---- statisztika ----------------------------------------------------------------
 let statNap=ma();
