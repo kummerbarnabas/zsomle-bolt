@@ -43,7 +43,11 @@
   "ar": 990,
   "csoport": "Szendvics"
  },
- "Rántott húsos szendvics": {
+ "Rántott sertés szendvics": {
+  "ar": 1190,
+  "csoport": "Szendvics"
+ },
+ "Rántott csirke szendvics": {
   "ar": 1190,
   "csoport": "Szendvics"
  },
