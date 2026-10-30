@@ -57,7 +57,7 @@ tr.ossz td{font-weight:700;border-bottom:0}
 const SB_URL='https://dqttcjxviijeopzbqfqq.supabase.co', SB_KEY='sb_publishable_S4aefwe9JNDz5hunZdHF9Q_iRBRbmvP';
 const FRISSITES_MP=10, TZ='Europe/Budapest', JK='raktar_jelszo';
 // Az oldal változata: a kozzetesz.sh a közzétett példányba írja (itt 'fejlesztes'). Ha kint újabb van, az oldal újratölt.
-const OLDAL_VER='20261030092432';
+const OLDAL_VER='20261030095406';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ft=n=>Math.round(+n||0).toLocaleString('hu-HU')+' Ft';
@@ -94,7 +94,7 @@ async function belep(e){e.preventDefault();const j=$('#jsz').value;if(!j)return;
 function kilep(){try{localStorage.removeItem(JK);sessionStorage.removeItem(JK);}catch(e){}jelszo=null;clearTimeout(idozito);belepView();}
 
 async function frissit(){clearTimeout(idozito);
-  try{adat=await rpc('raktar_adatok',{p_jelszo:jelszo,p_nap:nap});await kasszaBetolt();utolso=new Date();hiba=null;}
+  try{adat=await rpc('raktar_adatok',{p_jelszo:jelszo,p_nap:nap});await kasszaBetolt();await keszletBetolt();utolso=new Date();hiba=null;}
   catch(err){if(err.kod==='28P01'){kilep();return;}hiba=err.message;}
   rajzol();
   // Csak a mai napot és csak látható lapon frissítjük; más napok adata már nem változik (javítás ritka, kézzel frissíthető).
@@ -209,6 +209,14 @@ function rajzol(){
     <p class="megj">* sütve − maradék − selejt; a maradék általában záráskor kerül be, addig az „eladva” a kisütött mennyiség.</p>`:'<p class="ures">Ma még nem volt sütés.</p>'}</div>`;
   // Fornetti fagyasztókészlet: mindig a mostani állapot (leltár + beszerzés − a leltár óta kisütött), a napválasztótól független.
   const FK=A.fornetti_keszlet, kgdb=(v,eg)=>v==null?'–':db(eg==='kg'?Math.round(v*100)/100:v)+' '+eg;
+  // Virsli, rántott hús, hot dog kifli, hamburger hús: mostani készlet (leltár + beszerzés − a leltár óta eladott, élőben a napi lapról).
+  const KK=keszlet;
+  const kkBox=`<div class="box" id="keszlet"><h2>Hot dog, hamburger, rántott hús – készlet most</h2>${KK?`<table><tr><th>Tétel</th><th class="sz">Leltár</th><th class="sz">+ Besz.</th><th class="sz">− Fogyás</th><th class="sz">Most</th></tr>
+    ${KK.tetelek.map(t=>t.leltar==null?`<tr class="ures"><td>${esc(t.termek)}</td><td class="sz"></td><td class="sz"></td><td class="sz">${+t.fogyas?db(t.fogyas):''}</td><td class="sz">nincs levonva</td></tr>`
+      :`<tr><td>${esc(t.termek)}</td><td class="sz">${db(t.leltar)}</td><td class="sz">${+t.beszerzes?db(t.beszerzes):''}</td><td class="sz">${+t.fogyas?db(t.fogyas):''}</td>
+      <td class="sz ${t.aktualis<0?'rossz':''}"><b>${db(t.aktualis)}</b></td></tr>`).join('')}</table>
+    <p class="megj">Leltár: ${new Date(KK.leltar_ideje).toLocaleString('hu-HU',{timeZone:TZ,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}. A fogyás élőben vonódik le a napi lap eladásaiból (a dupla húsos hamburger 2 húst visz); a beszerzés az esti körben frissül (utoljára ${new Date(KK.alap_frissitve).toLocaleString('hu-HU',{timeZone:TZ,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}).</p>`
+    :'<p class="ures">Még nincs feltöltött leltár.</p>'}</div>`;
   const fkBox=`<div class="box" id="fornetti"><h2>Fornetti fagyasztókészlet – most</h2>${FK?`<table><tr><th>Termék</th><th class="sz">Leltár</th><th class="sz">+ Besz.</th><th class="sz">− Fogyás</th><th class="sz">Most</th></tr>
     ${FK.tetelek.map(t=>`<tr><td>${esc(t.termek)}${t.leltaron?'':'<br><span class="ures">nem volt a leltáron</span>'}</td><td class="sz">${kgdb(t.leltar,t.egyseg)}</td>
       <td class="sz">${+t.beszerzes?kgdb(t.beszerzes,t.egyseg):''}</td><td class="sz">${t.fogyas==null?'?':+t.fogyas?kgdb(t.fogyas,t.egyseg)+(t.egyseg==='kg'?'<br><span class="ures">'+db(t.kisutve)+' db</span>':''):''}</td>
@@ -372,7 +380,7 @@ function rajzol(){
     <p class="megj">Az eladás a napi eladás lap koppintásai (és a programbeli eladás); a pénztárgépen ütött forgalom nincs benne.</p>`:'<p class="ures">Még nincs rögzítés.</p>'}</div>`;
   const nav=`<nav class="ugro">${[['eladas','Eladás'],['napilap','Napi lap'],['beerkezes','Beérkezés'],['sutes','Sütés'],['elfogyott','Elfogyott'],['maradek','Maradék / selejt'],['penz','Pénz'],['kassza','Kassza-ellenőrzés'],['fornetti','Fornetti készlet'],['excel','Excel']].map(([i,n])=>`<a href="#${i}">${n}</a>`).join('')}</nav>`;
   const g=window.scrollY;
-  $('#app').innerHTML=fej+`<main>${csempek}${nav}<div class="racs">${orasBox}${vonalBox}${beBox}${fornBox}${fkBox}${penzBox}${kasszaBox}${marBox}${kifBox}${sutBox}${eladBox}${excelBox}${dolgBox}</div></main>`;
+  $('#app').innerHTML=fej+`<main>${csempek}${nav}<div class="racs">${orasBox}${vonalBox}${beBox}${fornBox}${fkBox}${kkBox}${penzBox}${kasszaBox}${marBox}${kifBox}${sutBox}${eladBox}${excelBox}${dolgBox}</div></main>`;
   window.scrollTo(0,g);}
 
 // A forgalmi Excel „Termékek” lapja (havi darabszámok): esténként változik, ezért csak belépéskor és előtérbe kerüléskor kérjük le.
@@ -380,6 +388,8 @@ async function excelTermekek(){if(!jelszo)return;try{xTermekek=await rpc('raktar
 // Kassza-ellenőrzés (2026-10-23): a kiválasztott nap hónapjának pénzmozgása, Z-szalagjai és a forgalmi Excel bevételi sorai.
 // Percenként és hónapváltáskor kérjük le (a 10 mp-es frissítésnél ritkábban, mert több napot hoz).
 let kasszaIdo=0;
+let keszlet=null;
+async function keszletBetolt(){if(!jelszo)return;try{keszlet=await rpc('raktar_keszlet',{p_jelszo:jelszo});}catch(e){}}
 async function kasszaBetolt(){if(!jelszo)return;const tol=nap.slice(0,8)+'01',ho=new Date(nap.slice(0,7)+'-01T12:00:00');ho.setMonth(ho.getMonth()+1);ho.setDate(0);
   const ig=napStr(ho)<ma()?napStr(ho):ma();if(kasszaKor===tol&&Date.now()-kasszaIdo<60000)return;
   try{kassza=await rpc('raktar_kassza',{p_jelszo:jelszo,p_tol:tol,p_ig:ig});kasszaKor=tol;kasszaIdo=Date.now();}catch(e){}}
