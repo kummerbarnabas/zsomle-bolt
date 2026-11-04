@@ -451,11 +451,10 @@ async function elozoAdat(){
   let srv=null;if(navigator.onLine){try{const r=await sb('rpc/elozo_maradek',{method:'POST',body:'{}'});if(r.ok)srv=await r.json();}catch(e){}}
   const mai=ma(),lv=(await all('vonal')).filter(x=>x.tipus==='maradt'&&napja(x.ido)<mai),lm=(await all('maradek')).filter(x=>(x.tipus==='maradek'||x.tipus==='selejt')&&napja(x.ido)<mai);
   let nap=srv&&srv.nap||null;const lokMax=[...lv,...lm].map(x=>napja(x.ido)).sort().pop()||null;if(lokMax&&(!nap||lokMax>nap))nap=lokMax;
-  // 2026-11-04: ha az esti maradékot „selejt”-ként írták be, az számít; ha van „maradek” sor az adott napon, csak az (a napközbeni selejt nem keveredik bele)
-  const mTip=(srv&&srv.nap===nap&&srv.tipus==='maradek')||lm.some(x=>napja(x.ido)===nap&&x.tipus==='maradek')?'maradek':'selejt';
+  // 2026-11-04 (a tulajdonos döntése): a selejt egyben maradék is, a kettő együtt számít
   const katDe=x=>(TERMEKEK.find(t=>t.id===x.termek_id)||{}).kat||null;
   const vonal=[...(srv&&srv.nap===nap?srv.vonal:[]),...lv.filter(x=>napja(x.ido)===nap&&!(srv&&srv.nap===nap&&x.szinkron))].map(x=>({fajta:x.fajta,ertek:+x.ertek,ido:x.ido}));
-  const maradek=[...(srv&&srv.nap===nap?srv.maradek:[]),...lm.filter(x=>napja(x.ido)===nap&&x.tipus===mTip&&!(srv&&srv.nap===nap&&x.szinkron))].map(x=>({nev:x.nev,menny:+x.menny,kat:x.kat||katDe(x)}));
+  const maradek=[...(srv&&srv.nap===nap?srv.maradek:[]),...lm.filter(x=>napja(x.ido)===nap&&!(srv&&srv.nap===nap&&x.szinkron))].map(x=>({nev:x.nev,menny:+x.menny,kat:x.kat||katDe(x)}));
   return {nap,vonal,maradek,szerver:!!srv};}
 async function elozoView(){
   $('#main').innerHTML='<div class="panel"><p class="muted">Betöltés…</p></div>';
