@@ -151,7 +151,7 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='43'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='46'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -422,8 +422,15 @@ async function penzJavit(rid){const s=(await all('penz')).find(x=>x.id===rid);if
     await put('penz',{...s,osszeg:n,eredeti_osszeg:s.eredeti_osszeg??s.osszeg,javitva:nowISO(),javito:user.nev,szinkron:false});toast(n===0?'Törölve':'Javítva: '+ft(n));penzView();szinkron();},false,'Ft');}
 async function elozoZaro(nap){return (await all('penz')).filter(x=>x.tipus==='zaro'&&napja(x.ido)<nap&&+x.osszeg>0).sort((a,b)=>b.ido.localeCompare(a.ido))[0]||null;}
 async function penzView(){
-  const nap=ma();const P=(await all('penz')).filter(x=>napja(x.ido)===nap).sort((a,b)=>a.ido.localeCompare(b.ido));
-  const kp=(await all('eladas')).filter(e=>napja(e.ido)===nap&&e.fizetes==='keszpenz').reduce((s,e)=>s+(+e.osszeg),0);
+  const nap=ma();let P=(await all('penz')).filter(x=>napja(x.ido)===nap).sort((a,b)=>a.ido.localeCompare(b.ido));
+  let kp=(await all('eladas')).filter(e=>napja(e.ido)===nap&&e.fizetes==='keszpenz').reduce((s,e)=>s+(+e.osszeg),0);
+  // 2026-11-04: tulajdonosként (nem a tableten) az összesítő az adatbázisból jön, mert a helyi tár csak az adott eszköz saját beírásait tartalmazza.
+  if(tulajJelszo&&navigator.onLine){try{await szinkron();const H={apikey:SB_KEY,'Content-Type':'application/json'};
+    const [r1,r2]=await Promise.all([fetch(SB_URL+'/rest/v1/rpc/raktar_kassza',{method:'POST',headers:H,body:JSON.stringify({p_jelszo:tulajJelszo,p_tol:nap,p_ig:nap})}),
+      fetch(SB_URL+'/rest/v1/rpc/tulaj_adatok',{method:'POST',headers:H,body:JSON.stringify({p_jelszo:tulajJelszo,p_tol:nap,p_ig:nap})})]);
+    if(r1.ok&&r2.ok){const k=await r1.json(),t=await r2.json();
+      P=k.penz.map(x=>({...x,id:'szerver-'+x.ido,osszeg:+x.osszeg})).sort((a,b)=>a.ido.localeCompare(b.ido));
+      kp=(t.eladas||[]).filter(e=>e.fizetes==='keszpenz').reduce((s,e)=>s+(+e.osszeg),0);}}catch(e){}}
   const S={};Object.keys(PT).forEach(k=>S[k]=0);P.forEach(x=>{if(x.tipus in S)S[x.tipus]+=(+x.osszeg);});
   // A zárás a következő nap nyitója (a tulajdonos kérése, 2026-10-17): ha ma nincs nyitó számolás, az előző záró összege.
   const elozo=await elozoZaro(nap);let autoNyito=false;
