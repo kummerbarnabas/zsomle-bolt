@@ -151,7 +151,7 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='46'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='47'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -462,11 +462,16 @@ async function elozoAdat(){
   const katDe=x=>(TERMEKEK.find(t=>t.id===x.termek_id)||{}).kat||null;
   const vonal=[...(srv&&srv.nap===nap?srv.vonal:[]),...lv.filter(x=>napja(x.ido)===nap&&!(srv&&srv.nap===nap&&x.szinkron))].map(x=>({fajta:x.fajta,ertek:+x.ertek,ido:x.ido}));
   const maradek=[...(srv&&srv.nap===nap?srv.maradek:[]),...lm.filter(x=>napja(x.ido)===nap&&!(srv&&srv.nap===nap&&x.szinkron))].map(x=>({nev:x.nev,menny:+x.menny,kat:x.kat||katDe(x)}));
-  return {nap,vonal,maradek,szerver:!!srv};}
+  // 2026-11-05 (a tulajdonos döntése): mindig csak az előző nyitvatartási nap (vasárnap zárva, hétfőn a szombat) maradéka látszik, régebbi nap soha
+  const t=new Date(mai+'T12:00:00');t.setDate(t.getDate()-1);if(t.getDay()===0)t.setDate(t.getDate()-1);
+  const vart=napja(t.toISOString());
+  if(nap!==vart)return {nap:null,vart,vonal:[],maradek:[],szerver:!!srv};
+  return {nap,vart,vonal,maradek,szerver:!!srv};}
 async function elozoView(){
   $('#main').innerHTML='<div class="panel"><p class="muted">Betöltés…</p></div>';
   const A=await elozoAdat();
-  if(!A.nap){$('#main').innerHTML='<div class="panel"><div class="box"><h3>Tegnapi maradék</h3><p class="muted">Még nincs beírt esti maradék.</p></div></div>';return;}
+  if(!A.nap){const vn=A.vart?new Date(A.vart+'T12:00:00').toLocaleDateString('hu-HU',{weekday:'long',month:'long',day:'numeric'}):'az előző napról';
+    $('#main').innerHTML=`<div class="panel"><div class="box"><h3>Tegnapi maradék</h3><p class="muted">Nincs beírt esti maradék erről a napról: ${vn}. „–” = nem írták be.</p><button class="jv" onclick="elozoView()">↻ Frissít</button></div></div>`;return;}
   const nevek=new Set(),csop={'Hot dog':[],'Szendvics':[]};
   FAJTAK.forEach(g=>{if(g.nev==='Hot dog'||g.nev==='Szendvics'||g.nev==='Termékek')g.fajtak.forEach(f=>{(csop[g.nev==='Termékek'?'Szendvics':g.nev]).push(f);nevek.add(f);});});
   const ert=f=>{const v=A.vonal.filter(x=>x.fajta===f).sort((a,b)=>String(a.ido).localeCompare(String(b.ido))).pop();if(v)return v.ertek;
@@ -474,13 +479,15 @@ async function elozoView(){
   const sor=(n,v)=>`<tr${v>0?'':' class="muted"'}><td>${n}</td><td style="text-align:right;font-size:20px"><b>${v==null?'–':v}</b></td></tr>`;
   const tabla=(cim,l)=>`<div class="box"><h3>${cim}</h3><table>${l.length?l.join(''):'<tr><td class="muted">Nincs</td></tr>'}</table></div>`;
   const forn=Object.entries(A.maradek.filter(x=>x.kat==='Fornetti'&&!nevek.has(x.nev)).reduce((o,x)=>(o[x.nev]=(o[x.nev]||0)+x.menny,o),{})).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const egy=A.maradek.filter(x=>x.kat!=='Fornetti'&&!nevek.has(x.nev)).reduce((o,x)=>{const k=x.kat||'Egyéb';(o[k]=o[k]||{})[x.nev]=((o[k]||{})[x.nev]||0)+x.menny;return o;},{});
+  const egyTabla=Object.entries(egy).map(([k,o])=>tabla(k+' (db)',Object.entries(o).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([n,v])=>sor(n,v)))).join('');
   const nev=new Date(A.nap+'T12:00:00').toLocaleDateString('hu-HU',{weekday:'long',month:'long',day:'numeric'});
   $('#main').innerHTML=`<div class="panel"><div class="box" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="font-size:20px">Maradék: ${nev}</b>
-    <span class="muted">${A.nap===napja(new Date(Date.now()-864e5).toISOString())?'':'Nem tegnapi: az utolsó beírt esti maradék. '}${A.szerver?'':'Internet nélkül: csak ezen az eszközön beírt adat látszik. '}„–” = nem írták be.</span>
+    <span class="muted">${A.szerver?'':'Internet nélkül: csak ezen az eszközön beírt adat látszik. '}„–” = nem írták be.</span>
     <button class="jv" onclick="elozoView()" style="margin-left:auto">↻ Frissít</button></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px">
     ${tabla('Szendvics',csop.Szendvics.map(f=>sor(f,ert(f))))}${tabla('Hot dog',csop['Hot dog'].map(f=>sor(f,ert(f))))}
-    ${tabla('Fornetti (db)',forn.map(([n,v])=>sor(n,v)))}</div></div>`;}
+    ${tabla('Fornetti (db)',forn.map(([n,v])=>sor(n,v)))}${egyTabla}</div></div>`;}
 
 // ---- havi eladás (2026-10-30, a tulajdonos kérése: a kollégák lássák a havi eladást termékenként, napi bontásban) --------------
 let haviHonap=ma().slice(0,7);
