@@ -59,6 +59,94 @@
   "ar": 650,
   "csoport": "Termékek"
  },
+ "Házi krémes": {
+  "ar": 850,
+  "csoport": "Sütemények"
+ },
+ "Pite (Nonstop)": {
+  "ar": 790,
+  "csoport": "Sütemények"
+ },
+ "Meggyes pite (Nonstop)": {
+  "ar": 900,
+  "csoport": "Sütemények"
+ },
+ "Almás pite (Nonstop)": {
+  "ar": null,
+  "csoport": "Sütemények"
+ },
+ "Mákos pite (Nonstop)": {
+  "ar": null,
+  "csoport": "Sütemények"
+ },
+ "Túrós pite (Nonstop)": {
+  "ar": null,
+  "csoport": "Sütemények"
+ },
+ "Gesztenye püre": {
+  "ar": 990,
+  "csoport": "Sütemények"
+ },
+ "Bécsi krémes": {
+  "ar": 990,
+  "csoport": "Sütemények"
+ },
+ "Kókuszkocka (Nonstop)": {
+  "ar": 990,
+  "csoport": "Sütemények"
+ },
+ "Mézes zserbó": {
+  "ar": 990,
+  "csoport": "Sütemények"
+ },
+ "Süti (Nonstop)": {
+  "ar": null,
+  "csoport": "Sütemények"
+ },
+ "Francia krémes (Kriscuki)": {
+  "ar": 990,
+  "csoport": "Sütemények"
+ },
+ "Mignon (Kriscuki)": {
+  "ar": 890,
+  "csoport": "Sütemények"
+ },
+ "Dominó szelet (Kriscuki)": {
+  "ar": 990,
+  "csoport": "Sütemények"
+ },
+ "Mozart szelet (Kriscuki)": {
+  "ar": 1090,
+  "csoport": "Sütemények"
+ },
+ "Édes-gesztenyés szelet (Kriscuki)": {
+  "ar": 1090,
+  "csoport": "Sütemények"
+ },
+ "Charlotte szelet (Kriscuki)": {
+  "ar": 1090,
+  "csoport": "Sütemények"
+ },
+ "Málnás túrótorta (Kriscuki)": {
+  "ar": 1090,
+  "csoport": "Sütemények"
+ },
+ "Dobos torta (Kriscuki)": {
+  "ar": 1090,
+  "csoport": "Sütemények"
+ },
+ "Fekete erdő torta (Kriscuki)": {
+  "ar": 1090,
+  "csoport": "Sütemények"
+ },
+ "Marcipános citromtorta (Kriscuki)": {
+  "ar": 1090,
+  "csoport": "Sütemények"
+ },
+ "Puncs torta (Kriscuki)": {
+  "ar": 1090,
+  "csoport": "Sütemények"
+ },
  "Foodora rendelés": {
   "ar": null,
   "csoport": "Foodora és Munch"
