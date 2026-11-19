@@ -151,7 +151,20 @@ async function fuggo(){let n=0;for(const s of ['eladas','sutes','maradek','penz'
 setInterval(szinkron,60000);
 
 // ---- állapot -------------------------------------------------------------------
-const VALTOZAT='47'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+const VALTOZAT='48'; // a fejlécben látszik, hogy a tablet melyik változatot futtatja
+
+// ---- Hibanapló (2026-11-19, v48, a tulajdonos jóváhagyásával): a 11-19 reggeli „Tegnapi maradék”-hiba távolról nem volt kideríthető.
+// A tablet feljegyzi az adatbázisba (tablet_naplo, csak írható), mit látott: programverzió, internet, melyik nap, hány tétel; induláskor
+// és programhibánál is. Internet nélkül a localStorage-ban gyűlik (legfeljebb 30), és a következő sikeres hívással felmegy.
+async function naplo(esemeny,adat){
+  let u=null;try{u=user&&user.nev||null;}catch(e){}
+  const s={esemeny,adat:{...adat,v:VALTOZAT,online:navigator.onLine,user:u,eszkozido:new Date().toISOString()}};
+  let q=[];try{q=JSON.parse(localStorage.getItem('naplo_fuggo')||'[]');}catch(e){}
+  q.push(s);q=q.slice(-30);
+  if(navigator.onLine){const m=[];for(const x of q){try{const r=await sb('rpc/tablet_naplo_ir',{method:'POST',body:JSON.stringify({p_esemeny:x.esemeny,p_adat:x.adat})});if(!r.ok)m.push(x);}catch(e){m.push(x);}}q=m;}
+  try{localStorage.setItem('naplo_fuggo',JSON.stringify(q));}catch(e){}}
+window.addEventListener('error',e=>{naplo('hiba',{uzenet:String(e.message||e.error||''),hol:(e.filename||'')+':'+(e.lineno||'')}).catch(()=>{});});
+window.addEventListener('unhandledrejection',e=>{naplo('hiba',{uzenet:String(e.reason&&e.reason.message||e.reason||'')}).catch(()=>{});});
 let helyben=false; // Helyben fogyasztás: a hot dog, szendvics, hamburger, kávé, tea, forró csoki 5% áfás (2026-10-17)
 let TERMEKEK=[], user=null, tab='elad', kat='Kenyerek', keres='', kosar=[];
 const ft=n=>Math.round(n).toLocaleString('hu-HU')+' Ft';
@@ -470,6 +483,7 @@ async function elozoAdat(){
 async function elozoView(){
   $('#main').innerHTML='<div class="panel"><p class="muted">Betöltés…</p></div>';
   const A=await elozoAdat();
+  naplo('elozo',{nap:A.nap,vart:A.vart,szerver:A.szerver,maradek:A.maradek.length,vonal:A.vonal.length});
   if(!A.nap){const vn=A.vart?new Date(A.vart+'T12:00:00').toLocaleDateString('hu-HU',{weekday:'long',month:'long',day:'numeric'}):'az előző napról';
     $('#main').innerHTML=`<div class="panel"><div class="box"><h3>Tegnapi maradék</h3><p class="muted">Nincs beírt esti maradék erről a napról: ${vn}. „–” = nem írták be.</p><button class="jv" onclick="elozoView()">↻ Frissít</button></div></div>`;return;}
   const nevek=new Set(),csop={'Hot dog':[],'Szendvics':[]};
@@ -565,7 +579,7 @@ async function termekekBetolt(){
   try{const r=await sb('termekek?select=id,nev,rovid,kat,ar,egyseg,foto,sorrend,allergen,allergen_forras,afa,helyben5&order=sorrend');if(r.ok){const d=await r.json();if(d.length){localStorage.setItem('termekek',JSON.stringify(d));return d;}}}catch(e){}
   try{const c=localStorage.getItem('termekek');if(c)return JSON.parse(c);}catch(e){}
   return await (await fetch('termekek.json')).json();}
-(async()=>{await openDB();TERMEKEK=await termekekBetolt();FAJTAK=await fajtakBetolt();KIFOGY=await jsonBetolt('kifogyas.json');szinkron();
+(async()=>{await openDB();TERMEKEK=await termekekBetolt();FAJTAK=await fajtakBetolt();KIFOGY=await jsonBetolt('kifogyas.json');szinkron();naplo('indul',{});
   if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
     let ujra=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!ujra){ujra=true;location.reload();}});}
   const q=new URLSearchParams(location.search);
